@@ -1,8 +1,12 @@
 #pragma once
 #include <stdio.h>
 #include <windows.h>
-#include <gl/GL.h>
+#include <glew.h>
+#include <glm.hpp>
+#include <GL.h>
 #include <CInputDevice.h>
+#pragma comment(lib, "glew32.dll")
+
 class App
 {
 private:
@@ -22,7 +26,8 @@ private:
 	float g = 0;
 	float b = 0;
 	float a = 1;
-
+	glm::mat4 View;
+	glm::vec3 pos;
 	HDC m_deviceContext;
 	HWND hWnd;
 	HGLRC m_renderingContext;
@@ -30,6 +35,8 @@ private:
 	CInputDevice    m_mouse;
 	CInputDevice    m_keyboard;
 	LPDIRECTINPUT8  m_pDI;
+
+
 
 	void init_GL();
 	void free_GL();
