@@ -3,10 +3,6 @@
 #include <map>
 #include <openGlEntities.h>
 
-// =========== temporary ============
-
-
-// ==================================
 #define Shader_Manager ShaderManager::get_instance()
 class ShaderManager
 {
@@ -21,7 +17,6 @@ public:
 	static ShaderManager& get_instance();
 	GLuint get_shader_handle(const std::string) const;
 };
-
 
 class shader
 {

@@ -4,7 +4,10 @@
 
 // =========== temporary ============
 
-std::map<std::string, std::string> shaders_names = { { "vertexShader.glsl", "pixelShader.glsl"} };
+std::vector<std::string> shaders_names = { "Shader.glsl"};
+std::string vertexKey("vertex");
+std::string pixelKey("pixel");
+std::string extensionKey(".glsl");
 
 // ==================================
 
@@ -14,14 +17,16 @@ ShaderManager::ShaderManager():m_shaders()
 }
 
 void ShaderManager::load_shaders() {
-	std::string key("vertex");
-	for (auto it = std::cbegin(shaders_names); it != std::cend(shaders_names); ++it)
+
+	for (int i = 0, size = shaders_names.size(); i < size; i++)
 	{
+		std::string current_shader = shaders_names[i];
+
 		GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
 		GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
 
 		std::string VertexShaderCode;
-		std::ifstream VertexShaderStream(it->first, std::ios::in);
+		std::ifstream VertexShaderStream(vertexKey + current_shader, std::ios::in);
 		if (VertexShaderStream.is_open())
 		{
 			std::stringstream sstr;
@@ -31,7 +36,7 @@ void ShaderManager::load_shaders() {
 		}
 
 		std::string FragmentShaderCode;
-		std::ifstream FragmentShaderStream(it->second, std::ios::in);
+		std::ifstream FragmentShaderStream(pixelKey + current_shader, std::ios::in);
 		if (FragmentShaderStream.is_open()) {
 			std::stringstream sstr;
 			sstr << FragmentShaderStream.rdbuf();
@@ -77,14 +82,12 @@ void ShaderManager::load_shaders() {
 		glDeleteShader(VertexShaderID);
 		glDeleteShader(FragmentShaderID);
 
-		std::size_t found = it->first.find(key);
+		std::size_t found = current_shader.find(extensionKey);
 		if (found != std::string::npos) {
-			const std::string common_name(it->first, found+ key.length(), it->first.length() - key.length());
-			m_shaders.insert(m_shaders.begin(), std::pair<const std::string, const GLuint>(common_name, ProgramID));
+			const std::string name_without_extension(current_shader, 0, current_shader.length() - extensionKey.length());
+			m_shaders.insert(m_shaders.begin(), std::pair<const std::string, const GLuint>(name_without_extension, ProgramID));
 		}
-
 	}
-
 }
 
 
