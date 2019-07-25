@@ -171,6 +171,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\app.cpp" />
     <ClCompile Include="..\..\..\CInputDevice.cpp" />
+    <ClCompile Include="..\..\..\shaderManager.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -178,6 +179,8 @@
     <ClInclude Include="..\..\..\CInputDevice.h" />
     <ClInclude Include="..\..\..\core.h" />
     <ClInclude Include="..\..\..\game.h" />
+    <ClInclude Include="..\..\..\openGlEntities.h" />
+    <ClInclude Include="..\..\..\shaderManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
