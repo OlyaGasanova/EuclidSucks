@@ -90,7 +90,6 @@ void ShaderManager::load_shaders() {
 	}
 }
 
-
 ShaderManager::~ShaderManager()
 {
 }
@@ -109,5 +108,4 @@ GLuint ShaderManager::get_shader_handle(const std::string shader_name) const
 		return 0;
 	else
 		return got->second;
-
 }

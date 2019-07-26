@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <windows.h>
-#include <gl/GL.h>
+#include <openGlEntities>
 
 namespace Core {
 	int width, height;	// размеры клиентской части окна

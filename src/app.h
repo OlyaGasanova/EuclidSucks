@@ -1,9 +1,7 @@
 #pragma once
 #include <stdio.h>
 #include <windows.h>
-#include <glew.h>
-#include <glm.hpp>
-#include <GL.h>
+#include <openGlEntities.h>
 #include <CInputDevice.h>
 #pragma comment(lib, "glew32.dll")
 
@@ -35,8 +33,6 @@ private:
 	CInputDevice    m_mouse;
 	CInputDevice    m_keyboard;
 	LPDIRECTINPUT8  m_pDI;
-
-
 
 	void init_GL();
 	void free_GL();
