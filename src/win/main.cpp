@@ -1,3 +1,18 @@
+#ifdef _DEBUG
+    #define _CRTDBG_MAP_ALLOC
+    #include "crtdbg.h"
+    #define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
+    #define new DEBUG_NEW
+#endif
+
+// hint for the driver to use discrete GPU
+extern "C" {
+// NVIDIA
+    __declspec(dllexport) int NvOptimusEnablement = 1;
+// AMD
+    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+
 #include "game.h"
 
 float osDeltaTime;
@@ -31,7 +46,7 @@ HGLRC initGL(HWND hWnd) {
     pfd.dwFlags    = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
     pfd.cColorBits = 32;
     pfd.cDepthBits = 24;
-	
+
     int format = ChoosePixelFormat(osDC, &pfd);
     SetPixelFormat(osDC, format, &pfd);
     HGLRC hRC = wglCreateContext(osDC);
@@ -151,6 +166,13 @@ int main(int argc, char** argv)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 #endif
 {
+#ifdef _DEBUG
+    _CrtMemState _msBegin, _msEnd, _msDiff;
+    _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDOUT);
+    _CrtMemCheckpoint(&_msBegin);
+#endif
+
     RECT r = { 0, 0, 854, 480 };
     AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, false);
 
@@ -186,9 +208,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
     };
 
-    Game::free();
+    Game::deinit();
 
     freeGL(hWnd, hRC);
+
+ #ifdef _DEBUG
+    _CrtMemCheckpoint(&_msEnd);
+
+    if (_CrtMemDifference(&_msDiff, &_msBegin, &_msEnd) > 0) {
+        _CrtDumpMemoryLeaks();
+        system("pause");
+    }
+#endif
 
     return 0;
 }

@@ -67,12 +67,13 @@ namespace Game {
     // ----
     }
 
-    void free() {
+    void deinit() {
         delete camera;
         ctx->destroyMesh(mesh);
         ctx->destroyShader(shader);
         ctx->destroyBuffer(iBuffer);
         ctx->destroyBuffer(vBuffer);
+        ctx->destroyTexture(texture);
 
         destroyContext(ctx);
     }
