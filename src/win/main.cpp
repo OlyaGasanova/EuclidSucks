@@ -122,15 +122,41 @@ InputKey remapMouse(UINT msg) {
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
         // window
+        case WM_ACTIVATE :
+            Input::reset();
+            break;
         case WM_SIZE :
             ctx->resize(LOWORD(lParam), HIWORD(lParam));
             break;
         case WM_DESTROY:
             PostQuitMessage(0);
             break;
-        case WM_KEYDOWN :
-        case WM_KEYUP   :
-            Input::setDown(remapKey(wParam), msg != WM_KEYUP);
+        case WM_CHAR       :
+        case WM_SYSCHAR    :
+            // TODO text input
+            break;
+        case WM_KEYDOWN    :
+        case WM_KEYUP      :
+        case WM_SYSKEYDOWN :
+        case WM_SYSKEYUP   :
+            if (msg == WM_SYSKEYDOWN && wParam == VK_RETURN) { // Alt + Enter - switch to fullscreen
+                static WINDOWPLACEMENT pLast;
+                DWORD style = GetWindowLong(hWnd, GWL_STYLE);
+                if (style & WS_OVERLAPPEDWINDOW) {
+                    MONITORINFO mInfo;
+                    mInfo.cbSize = sizeof(mInfo);
+                    if (GetWindowPlacement(hWnd, &pLast) && GetMonitorInfo(MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY), &mInfo)) {
+                        RECT &r = mInfo.rcMonitor;
+                        SetWindowLong(hWnd, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
+                        MoveWindow(hWnd, r.left, r.top, r.right - r.left, r.bottom - r.top, FALSE);
+                    }
+                } else {
+                    SetWindowLong(hWnd, GWL_STYLE, style | WS_OVERLAPPEDWINDOW);
+                    SetWindowPlacement(hWnd, &pLast);
+                }
+                break;
+            }
+            Input::setDown(remapKey(wParam), msg != WM_KEYUP && msg != WM_SYSKEYUP);
             break;
         case WM_LBUTTONDOWN   :
         case WM_LBUTTONUP     :

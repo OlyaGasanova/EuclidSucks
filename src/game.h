@@ -11,7 +11,9 @@ Context *ctx = NULL;
 #define MAX_TIME_STEP_MS 20
 
 namespace Game {
-    int      lastTime;
+    int     lastTime;
+    int     fpsTime;
+    int     frame;
     Camera  *camera;
 
 // test
@@ -26,6 +28,8 @@ namespace Game {
         ctx = createContext(GAPI_GL);
 
         lastTime = osGetTimeMS();
+        fpsTime = lastTime;
+        frame = 0;
 
         camera = new Camera(vec3(0.0f, 1.0f, 0.0f), vec3(0.0f));
 
@@ -150,6 +154,14 @@ namespace Game {
     // ----
 
         ctx->present();
+
+    // fps counter
+        frame++;
+        if (lastTime - fpsTime > 1000) {
+            fpsTime = lastTime;
+            LOG("FPS: %d\n", frame);
+            frame = 0;
+        }
     }
 }
 
