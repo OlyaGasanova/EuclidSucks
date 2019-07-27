@@ -60,6 +60,7 @@ HGLRC initGL(HWND hWnd) {
     ASSERT(wglChoosePixelFormatARB);
     ASSERT(wglCreateContextAttribsARB);
 
+// initialize OGL for main window
     osDC = GetDC(hWnd);
 
     const int pixelAttribs[] = {

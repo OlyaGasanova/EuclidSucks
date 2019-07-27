@@ -58,7 +58,7 @@ float clamp(float x, float minVal, float maxVal) {
 #include "stream.h"
 
 // file system
-char* readFile(const char *name, int &size) {
+char* readFile(const char *name, uint32 &size) {
     FileStream stream(name, FileStream::MODE_READ);
     size = stream.size;
 

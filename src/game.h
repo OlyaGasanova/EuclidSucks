@@ -31,18 +31,43 @@ namespace Game {
 
     // test
         { // test geometry
-            const Index indices[] = { 0, 1, 2, 0, 2, 3 };
-            const Vertex vertices[] = {
-                Vertex( vec3(-32, 0, -32), vec3(0, 1, 0), vec2( 0,  0), vec4(1, 1, 1, 1) ), 
-                Vertex( vec3( 32, 0, -32), vec3(0, 1, 0), vec2(32,  0), vec4(1, 1, 1, 1) ),
-                Vertex( vec3( 32, 0,  32), vec3(0, 1, 0), vec2(32, 32), vec4(1, 1, 1, 1) ),
-                Vertex( vec3(-32, 0,  32), vec3(0, 1, 0), vec2( 0, 32), vec4(1, 1, 1, 1) ),
-            };
+            {
+                const Index indices[] = { 0, 1, 2, 0, 2, 3 };
 
-            iBuffer = ctx->createBuffer(BUFFER_TYPE_INDEX,  sizeof(Index),  6, indices);
-            vBuffer = ctx->createBuffer(BUFFER_TYPE_VERTEX, sizeof(Vertex), 4, vertices);
+                Buffer::Desc desc;
+                desc.flags  = BUF_INDEX;
+                desc.count  = 6;
+                desc.stride = sizeof(Index);
+                desc.data   = indices;
 
-            mesh = ctx->createMesh(iBuffer, vBuffer, 0, iBuffer->count, 0);
+                iBuffer = ctx->createBuffer(desc);
+            }
+
+            {
+                const Vertex vertices[] = {
+                    Vertex( vec3(-32, 0, -32), vec3(0, 1, 0), vec2( 0,  0), vec4(1, 1, 1, 1) ), 
+                    Vertex( vec3( 32, 0, -32), vec3(0, 1, 0), vec2(32,  0), vec4(1, 1, 1, 1) ),
+                    Vertex( vec3( 32, 0,  32), vec3(0, 1, 0), vec2(32, 32), vec4(1, 1, 1, 1) ),
+                    Vertex( vec3(-32, 0,  32), vec3(0, 1, 0), vec2( 0, 32), vec4(1, 1, 1, 1) ),
+                };
+
+                Buffer::Desc desc;
+                desc.flags  = BUF_VERTEX;
+                desc.count  = 4;
+                desc.stride = sizeof(Vertex);
+                desc.data   = vertices;
+
+                vBuffer = ctx->createBuffer(desc);
+            }
+
+            {
+                Mesh::Desc desc;
+                desc.iBuffer = iBuffer;
+                desc.vBuffer = vBuffer;
+                desc.vStart  = 0;
+
+                mesh = ctx->createMesh(desc);
+            }
         }
 
         { // test texture
@@ -52,17 +77,26 @@ namespace Game {
                     data[y * 64 + x] = (((x / 32) ^ (y / 32)) & 1) ? 0xFF808080 : 0xFFC0C0C0;
                 }
             }
-
             const void *mips[] = { data };
 
-            texture = ctx->createTexture(64, 64, TEX_FMT_RGBA8, TEX_OPT_REPEAT | TEX_OPT_MIPMAP, 1, mips);
+            Texture::Desc desc;
+            desc.flags   = TEX_REPEAT | TEX_GEN_MIPS;
+            desc.width   = 64;
+            desc.height  = 64;
+            desc.levels  = 1;
+            desc.format  = Texture::RGBA8;
+            desc.data    = mips;
+
+            texture = ctx->createTexture(desc);
         }
 
         { // test shader
-            int size;
-            char *data = readFile("shaders/base.glsl", size);
-            shader = ctx->createShader(size, data);
-            delete[] data;
+            Shader::Desc desc;
+            desc.data = readFile("shaders/base.glsl", desc.size);
+
+            shader = ctx->createShader(desc);
+
+            delete[] desc.data;
         }
     // ----
     }
