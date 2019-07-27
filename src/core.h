@@ -1,33 +1,25 @@
-#pragma once
 #ifndef H_CORE
 #define H_CORE
 
-#include <stdio.h>
-#include <windows.h>
-#include <gl/GL.h>
+
+#include "context.h"
+
+
+
+extern int osGetTimeMS();
 
 namespace Core {
-	int width, height;	// размеры клиентской части окна
-	float deltaTime;	// время прошедшее с предыдущего кадра в секундах
+    bool  isQuit;
+    float deltaTime;
 
-	void init() {
-		//
-	}
+    void init() {
+        isQuit = false;
 
-	void free() {
-		//
-	}
+    }
 
-	// очистка буфера цвета и глубины
-	void clear(bool color, bool depth) {
-		glClear((color ? GL_COLOR_BUFFER_BIT : 0) |
-			(depth ? GL_DEPTH_BUFFER_BIT : 0));
-	}
-
-	// задание области вывода
-	void setViewport(int x, int y, int width, int height) {
-		glViewport(x, y, width, height);
-	}
+    void quit() {
+        isQuit = true;
+    }
 }
 
 #endif

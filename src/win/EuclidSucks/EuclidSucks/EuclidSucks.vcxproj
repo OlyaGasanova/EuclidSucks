@@ -23,7 +23,7 @@
     <ProjectGuid>{D41CF536-FCC2-4557-8A53-E07ED7DDF0EF}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>EuclidSucks</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -42,15 +42,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -77,8 +77,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\Olga\source\repos\EuclidSucks\glm\glm;$(VC_IncludePath);$(WindowsSDK_IncludePath);..\..\..\;C:\Program Files\RenderDoc\;C:\Users\Olga\source\repos\EuclidSucks\SDL2-2.0.9\include;C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\um\gl;C:\Users\Olga\Downloads\glew-2.1.0\glew-2.1.0\include\GL\</IncludePath>
-    <OutDir>..\..\..\bin\</OutDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);..\..\..\;C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\um\gl</IncludePath>
+    <OutDir>C:\Projects\EuclidSucks\src\bin\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -87,7 +87,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\Users\Olga\source\repos\EuclidSucks\glm\glm;C:\Users\Olga\Downloads\glew-2.1.0\glew-2.1.0\include\GL;$(IncludePath)</IncludePath>
+    <IncludePath>..\..\..\;$(IncludePath)</IncludePath>
+    <OutDir>C:\Projects\EuclidSucks\src\bin\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -118,10 +119,10 @@
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Users\Olga\source\repos\EuclidSucks\lib;C:\Program Files\RenderDoc\;C:\Users\Olga\source\repos\EuclidSucks\SDL2-2.0.9\lib\x64;</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glew32.lib;dxguid.lib; dinput8.lib;opengl32.lib;winmm.lib;wsock32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);GlU32.Lib</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;winmm.lib;wsock32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);GlU32.Lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -155,7 +156,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -164,23 +165,24 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
-      <AdditionalDependencies>glew32.lib;dxguid.lib; dinput8.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>C:\Users\Olga\source\repos\EuclidSucks\lib;</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\app.cpp" />
-    <ClCompile Include="..\..\..\CInputDevice.cpp" />
-    <ClCompile Include="..\..\..\shaderManager.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\app.h" />
-    <ClInclude Include="..\..\..\CInputDevice.h" />
-    <ClInclude Include="..\..\..\core.h" />
+    <ClInclude Include="..\..\..\camera.h" />
+    <ClInclude Include="..\..\..\context.h" />
+    <ClInclude Include="..\..\..\context\gl.h" />
     <ClInclude Include="..\..\..\game.h" />
-    <ClInclude Include="..\..\..\openGlEntities.h" />
-    <ClInclude Include="..\..\..\shaderManager.h" />
+    <ClInclude Include="..\..\..\input.h" />
+    <ClInclude Include="..\..\..\math\mat4.h" />
+    <ClInclude Include="..\..\..\math\vec2.h" />
+    <ClInclude Include="..\..\..\math\vec3.h" />
+    <ClInclude Include="..\..\..\math\vec4.h" />
+    <ClInclude Include="..\..\..\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
