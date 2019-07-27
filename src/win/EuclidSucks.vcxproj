@@ -173,16 +173,16 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\camera.h" />
-    <ClInclude Include="..\..\..\context.h" />
-    <ClInclude Include="..\..\..\context\gl.h" />
-    <ClInclude Include="..\..\..\game.h" />
-    <ClInclude Include="..\..\..\input.h" />
-    <ClInclude Include="..\..\..\math\mat4.h" />
-    <ClInclude Include="..\..\..\math\vec2.h" />
-    <ClInclude Include="..\..\..\math\vec3.h" />
-    <ClInclude Include="..\..\..\math\vec4.h" />
-    <ClInclude Include="..\..\..\utils.h" />
+    <ClInclude Include="..\camera.h" />
+    <ClInclude Include="..\context.h" />
+    <ClInclude Include="..\context\gl.h" />
+    <ClInclude Include="..\game.h" />
+    <ClInclude Include="..\input.h" />
+    <ClInclude Include="..\math\mat4.h" />
+    <ClInclude Include="..\math\vec2.h" />
+    <ClInclude Include="..\math\vec3.h" />
+    <ClInclude Include="..\math\vec4.h" />
+    <ClInclude Include="..\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
