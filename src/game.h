@@ -49,18 +49,6 @@ namespace Game {
                     data[y * 64 + x] = (((x / 32) ^ (y / 32)) & 1) ? 0xFF808080 : 0xFFC0C0C0;
                 }
             }
-            /*
-
-            const uint32 data[5] = {
-                 0xFF808080, 0xFFC0C0C0,
-                 0xFFC0C0C0, 0xFF808080,
-                 0xFFA0A0A0
-            };
-
-            const void *mips[] = { &data[0], &data[4] };
-
-            texture = ctx->createTexture(2, 2, TEX_FMT_RGBA8, TEX_OPT_REPEAT | TEX_OPT_NEAREST | TEX_OPT_MIPMAP, 2, mips);
-            */
 
             const void *mips[] = { data };
 
