@@ -55,20 +55,16 @@ float clamp(float x, float minVal, float maxVal) {
 #include "math/vec4.h"
 #include "math/mat4.h"
 
+#include "stream.h"
 
 // file system
 char* readFile(const char *name, int &size) {
-    FILE *f = fopen(name, "rb");
-    if (!f) {
-        ASSERT(false);
-        return NULL;
-    }
-    fseek(f, 0, SEEK_END);
-    size = ftell(f);
-    fseek(f, 0, SEEK_SET);
+    FileStream stream(name, FileStream::MODE_READ);
+    size = stream.size;
+
     char *data = new char[size];
-    size = (int)fread(data, 1, size, f);
-    fclose(f);
+    stream.read(data, size);
+
     return data;
 }
 

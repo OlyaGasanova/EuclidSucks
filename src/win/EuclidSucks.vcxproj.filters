@@ -29,6 +29,7 @@
     <ClInclude Include="..\math\mat4.h">
       <Filter>math</Filter>
     </ClInclude>
+    <ClInclude Include="..\stream.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

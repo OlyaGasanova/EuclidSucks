@@ -182,6 +182,7 @@
     <ClInclude Include="..\math\vec2.h" />
     <ClInclude Include="..\math\vec3.h" />
     <ClInclude Include="..\math\vec4.h" />
+    <ClInclude Include="..\stream.h" />
     <ClInclude Include="..\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
