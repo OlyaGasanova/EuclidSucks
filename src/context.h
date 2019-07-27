@@ -3,21 +3,6 @@
 
 #include "utils.h"
 
-enum BufferType {
-    BUFFER_TYPE_INDEX,
-    BUFFER_TYPE_VERTEX,
-};
-
-enum TextureFormat {
-    TEX_FMT_RGBA8,
-};
-
-enum TextureOptions {
-    TEX_OPT_REPEAT  = 1,
-    TEX_OPT_NEAREST = 2,
-    TEX_OPT_MIPMAP  = 4,
-};
-
 typedef unsigned short Index;
 
 struct Vertex {
@@ -30,6 +15,11 @@ struct Vertex {
     Vertex(const vec3 &p, const vec3 &n, const vec2 &t, const vec4 &c) : position(p), normal(n), texcoord(t), color(c) {}
 };
 
+enum BufferType {
+    BUFFER_TYPE_INDEX,
+    BUFFER_TYPE_VERTEX,
+};
+
 struct Buffer  {
     BufferType type;
     int        stride;
@@ -37,6 +27,17 @@ struct Buffer  {
 
     Buffer(BufferType type, int stride, int count) : type(type), stride(stride), count(count) {}
     virtual ~Buffer() {}
+};
+
+
+enum TextureFormat {
+    TEX_FMT_RGBA8,
+};
+
+enum TextureOptions {
+    TEX_OPT_REPEAT  = 1,
+    TEX_OPT_NEAREST = 2,
+    TEX_OPT_MIPMAP  = 4,
 };
 
 struct Texture {
@@ -48,6 +49,7 @@ struct Texture {
     Texture(int width, int height, TextureFormat format, uint32 opt) : width(width), height(height), format(format), opt(opt) {}
     virtual ~Texture() {}
 };
+
 
 #define DECL_ENUM(v) v,
 #define DECL_STR(v)  #v,
@@ -78,6 +80,19 @@ struct Shader {
     virtual void setParam(ShaderUniform uniform, const mat4 &value, int count = 1) {}
 };
 
+
+struct Mesh {
+    Buffer *iBuffer;
+    Buffer *vBuffer;
+    int    iStart;
+    int    iCount;
+    int    vStart;
+
+    Mesh(Buffer *iBuffer, Buffer *vBuffer, int iStart, int iCount, int vStart) : iBuffer(iBuffer), vBuffer(vBuffer), iStart(iStart), iCount(iCount), vStart(vStart) {}
+    virtual ~Mesh() {}
+};
+
+
 enum ClearMask {
     CLEAR_MASK_COLOR   = 1,
     CLEAR_MASK_DEPTH   = 2,
@@ -97,19 +112,20 @@ struct Context {
     virtual Buffer*  createBuffer(BufferType type, int stride, int count, const void *data)                                    { return NULL; }
     virtual Shader*  createShader(int size, const void *data) = 0                                                              { return NULL; }
     virtual Texture* createTexture(int width, int height, TextureFormat format, const uint32 opt, int mips, const void **data) { return NULL; }
+    virtual Mesh*    createMesh(Buffer *iBuffer, Buffer *vBuffer, int iStart, int iCount, int vStart)                          { return NULL; }
 
     virtual void destroyBuffer(Buffer *buffer)    { delete buffer;  }
     virtual void destroyShader(Shader *shader)    { delete shader;  }
     virtual void destroyTexture(Texture *texture) { delete texture; }
+    virtual void destroyMesh(Mesh *mesh)          { delete mesh;    }
 
     virtual void resize(int nWidth, int nHeight) { width = nWidth; height = nHeight; }
     virtual void clear(int clearMask, const vec4 &color = COLOR_BLACK, float depth = 1.0f, int stencil = 0) {}
     virtual void setViewport(int x, int y, int width, int height) {}
-    virtual void setBuffer(const Buffer *buffer) {}
     virtual void setTexture(const Texture *texture, ShaderSampler sampler) {}
     virtual void setShader(const Shader *shader) {}
 
-    virtual void drawIndexed(int offset, int count) {}
+    virtual void draw(Mesh *mesh) {}
 };
 
 #include "context/gl.h"

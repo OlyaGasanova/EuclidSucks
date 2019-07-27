@@ -11,8 +11,18 @@ int osGetTimeMS() {
     return int(Count.QuadPart * 1000L / Freq.QuadPart);
 }
 
+
+void freeGL(HWND hWnd, HGLRC hRC) {
+    ReleaseDC(hWnd, osDC);
+    wglMakeCurrent(0, 0);
+    wglDeleteContext(hRC);
+}
+
 HGLRC initGL(HWND hWnd) {
-    osDC = GetDC(hWnd);
+// use fake window to get advanced functionality
+    HWND fakeWnd = CreateWindow("static", "fake", WS_POPUP, 0, 0, 0, 0, 0, 0, 0, 0);
+
+    osDC = GetDC(fakeWnd);
 
     PIXELFORMATDESCRIPTOR pfd;
     memset(&pfd, 0, sizeof(pfd));
@@ -26,14 +36,50 @@ HGLRC initGL(HWND hWnd) {
     SetPixelFormat(osDC, format, &pfd);
     HGLRC hRC = wglCreateContext(osDC);
     wglMakeCurrent(osDC, hRC);
+
+    PFNWGLCHOOSEPIXELFORMATARBPROC    wglChoosePixelFormatARB    = GetProcOGL(wglChoosePixelFormatARB);
+    PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = GetProcOGL(wglCreateContextAttribsARB);
+    freeGL(fakeWnd, hRC);
+    DestroyWindow(fakeWnd);
+
+    ASSERT(wglChoosePixelFormatARB);
+    ASSERT(wglCreateContextAttribsARB);
+
+    osDC = GetDC(hWnd);
+
+    const int pixelAttribs[] = {
+        WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
+        WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
+        WGL_DOUBLE_BUFFER_ARB,  GL_TRUE,
+        WGL_PIXEL_TYPE_ARB,     WGL_TYPE_RGBA_ARB,
+        WGL_ACCELERATION_ARB,   WGL_FULL_ACCELERATION_ARB,
+        WGL_COLOR_BITS_ARB,     32,
+        WGL_ALPHA_BITS_ARB,     8,
+        WGL_DEPTH_BITS_ARB,     24,
+        WGL_STENCIL_BITS_ARB,   8,
+        0
+    };
+ 
+    UINT numFormats;
+    bool status = wglChoosePixelFormatARB(osDC, pixelAttribs, NULL, 1, &format, &numFormats);
+    ASSERT(status && numFormats > 0);
+
+    DescribePixelFormat(osDC, format, sizeof(pfd), &pfd);
+    SetPixelFormat(osDC, format, &pfd);
+
+    int contextAttribs[] = {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MINOR_VERSION_ARB, 2,
+        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+        0
+    };
+ 
+    hRC = wglCreateContextAttribsARB(osDC, 0, contextAttribs);
+    wglMakeCurrent(osDC, hRC);
+ 
     return hRC;
 }
 
-void freeGL(HWND hWnd, HGLRC hRC) {
-    ReleaseDC(hWnd, osDC);
-    wglMakeCurrent(0, 0);
-    wglDeleteContext(hRC);
-}
 
 InputKey remapKey(WPARAM code) {
     uint32 codes[KEY_MAX] = { 

@@ -17,6 +17,7 @@ namespace Game {
 // test
     Buffer  *iBuffer;
     Buffer  *vBuffer;
+    Mesh    *mesh;
     Texture *texture;
     Shader  *shader;
 // ----
@@ -40,6 +41,8 @@ namespace Game {
 
             iBuffer = ctx->createBuffer(BUFFER_TYPE_INDEX,  sizeof(Index),  6, indices);
             vBuffer = ctx->createBuffer(BUFFER_TYPE_VERTEX, sizeof(Vertex), 4, vertices);
+
+            mesh = ctx->createMesh(iBuffer, vBuffer, 0, iBuffer->count, 0);
         }
 
         { // test texture
@@ -66,6 +69,7 @@ namespace Game {
 
     void free() {
         delete camera;
+        ctx->destroyMesh(mesh);
         ctx->destroyShader(shader);
         ctx->destroyBuffer(iBuffer);
         ctx->destroyBuffer(vBuffer);
@@ -106,11 +110,8 @@ namespace Game {
     // test
         ctx->setShader(shader);
         ctx->setTexture(texture, sDiffuse);
-        ctx->setBuffer(iBuffer);
-        ctx->setBuffer(vBuffer);
         shader->setParam(uViewProj, camera->mViewProj);
-
-        ctx->drawIndexed(0, iBuffer->count);
+        ctx->draw(mesh);
     // ----
 
         ctx->present();

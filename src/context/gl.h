@@ -4,12 +4,16 @@
 #include "context.h"
 #include <gl/GL.h>
 #include <gl/glext.h>
+#include <gl/wglext.h>
 
 // Buffers
     PFNGLGENBUFFERSARBPROC              glGenBuffers;
     PFNGLDELETEBUFFERSARBPROC           glDeleteBuffers;
     PFNGLBINDBUFFERARBPROC              glBindBuffer;
     PFNGLBUFFERDATAARBPROC              glBufferData;
+    PFNGLGENVERTEXARRAYSPROC            glGenVertexArrays;
+    PFNGLDELETEVERTEXARRAYSPROC         glDeleteVertexArrays;
+    PFNGLBINDVERTEXARRAYPROC            glBindVertexArray;
 // Textures
     PFNGLACTIVETEXTUREPROC              glActiveTexture;
     PFNGLGENERATEMIPMAPPROC             glGenerateMipmap;
@@ -51,6 +55,7 @@ struct BufferGL : Buffer {
             default : ASSERT(false);
         }
 
+        glBindVertexArray(0);
         glGenBuffers(1, &id);
         glBindBuffer(target, id);
         glBufferData(target, count * stride, data, GL_STATIC_DRAW);
@@ -179,6 +184,37 @@ struct ShaderGL : Shader {
     }
 };
 
+struct MeshGL : Mesh {
+    GLuint id;
+
+    MeshGL(Buffer *iBuffer, Buffer *vBuffer, int iStart, int iCount, int vStart) : Mesh(iBuffer, vBuffer, iStart, iCount, vStart) {
+        BufferGL *ibuf = (BufferGL*)iBuffer;
+        BufferGL *vbuf = (BufferGL*)vBuffer;
+
+        glGenVertexArrays(1, &id);
+        glBindVertexArray(id);
+        glBindBuffer(ibuf->target, ibuf->id);
+        glBindBuffer(vbuf->target, vbuf->id);
+
+        Vertex *v = (Vertex*)NULL + vStart;
+        glEnableVertexAttribArray(aPosition);
+        glEnableVertexAttribArray(aNormal);
+        glEnableVertexAttribArray(aTexCoord);
+        glEnableVertexAttribArray(aColor);
+
+        glVertexAttribPointer(aPosition, 3, GL_FLOAT, false, vbuf->stride, &v->position);
+        glVertexAttribPointer(aNormal,   3, GL_FLOAT, false, vbuf->stride, &v->normal);
+        glVertexAttribPointer(aTexCoord, 2, GL_FLOAT, false, vbuf->stride, &v->texcoord);
+        glVertexAttribPointer(aColor,    4, GL_FLOAT, false, vbuf->stride, &v->color);
+
+        glBindVertexArray(0);
+    }
+
+    virtual ~MeshGL() {
+        glDeleteVertexArrays(1, &id);
+    }
+};
+
 struct ContextGL : Context {
     ContextGL() {
     // Buffers
@@ -186,6 +222,9 @@ struct ContextGL : Context {
         GetProcOGL( glDeleteBuffers );
         GetProcOGL( glBindBuffer );
         GetProcOGL( glBufferData );
+        GetProcOGL( glGenVertexArrays );
+        GetProcOGL( glDeleteVertexArrays );
+        GetProcOGL( glBindVertexArray );
     // Textures
         GetProcOGL( glActiveTexture );
         GetProcOGL( glGenerateMipmap );
@@ -213,11 +252,6 @@ struct ContextGL : Context {
         GetProcOGL( glDisableVertexAttribArray );
         GetProcOGL( glVertexAttribPointer );
         GetProcOGL( glGetProgramiv );
-
-        glEnableVertexAttribArray(aPosition);
-        glEnableVertexAttribArray(aNormal);
-        glEnableVertexAttribArray(aTexCoord);
-        glEnableVertexAttribArray(aColor);
     }
 
     virtual ~ContextGL() {
@@ -233,12 +267,16 @@ struct ContextGL : Context {
         return new BufferGL(type, stride, count, data);
     }
 
+    virtual Shader* createShader(int size, const void *data) override {
+        return new ShaderGL(size, data);
+    }
+
     virtual Texture* createTexture(int width, int height, TextureFormat format, const uint32 opt, int mips, const void **data) override {
         return new TextureGL(width, height, format, opt, mips, data);
     }
 
-    virtual Shader* createShader(int size, const void *data) override {
-        return new ShaderGL(size, data);
+    virtual Mesh* createMesh(Buffer *iBuffer, Buffer *vBuffer, int iStart, int iCount, int vStart) override {
+        return new MeshGL(iBuffer, vBuffer, iStart, iCount, vStart);
     }
 
     virtual void clear(int clearMask, const vec4 &color, float depth, int stencil) override {
@@ -267,18 +305,6 @@ struct ContextGL : Context {
         glViewport(x, y, width, height);
     }
 
-    virtual void setBuffer(const Buffer *buffer) override {
-        const BufferGL *buf = (BufferGL*)buffer;
-        glBindBuffer(buf->target, buf->id);
-        if (buf->type == BUFFER_TYPE_VERTEX) {
-            Vertex *v = NULL;
-            glVertexAttribPointer(aPosition, 3, GL_FLOAT, false, buf->stride, &v->position);
-            glVertexAttribPointer(aNormal,   3, GL_FLOAT, false, buf->stride, &v->normal);
-            glVertexAttribPointer(aTexCoord, 2, GL_FLOAT, false, buf->stride, &v->texcoord);
-            glVertexAttribPointer(aColor,    4, GL_FLOAT, false, buf->stride, &v->color);
-        }
-    }
-
     virtual void setTexture(const Texture *texture, ShaderSampler sampler) override {
         const TextureGL *tex = (TextureGL*)texture;
         glActiveTexture(GL_TEXTURE0 + sampler);
@@ -290,9 +316,9 @@ struct ContextGL : Context {
         glUseProgram(shd->id);
     }
 
-    virtual void drawIndexed(int offset, int count) override {
-        glDisable(GL_CULL_FACE);
-        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_SHORT, (Index*)0 + offset);
+    virtual void draw(Mesh *mesh) override {
+        glBindVertexArray(((MeshGL*)mesh)->id);
+        glDrawElements(GL_TRIANGLES, mesh->iCount, GL_UNSIGNED_SHORT, (Index*)0 + mesh->iStart);
     }
 };
 
