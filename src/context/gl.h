@@ -316,11 +316,11 @@ struct ContextGL : Context {
         glUseProgram(shd->id);
     }
 
-    virtual void draw(Mesh *mesh) override {
-        glBindVertexArray(((MeshGL*)mesh)->id);
-        glDrawElements(GL_TRIANGLES, mesh->iCount, GL_UNSIGNED_SHORT, (Index*)0 + mesh->iStart);
+    virtual void draw(const Mesh *mesh) override {
+        const MeshGL *msh = (MeshGL*)mesh;
+        glBindVertexArray(msh->id);
+        glDrawElements(GL_TRIANGLES, msh->iCount, GL_UNSIGNED_SHORT, (Index*)NULL + msh->iStart);
     }
 };
-
 
 #endif

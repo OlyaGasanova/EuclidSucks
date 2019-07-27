@@ -125,7 +125,7 @@ struct Context {
     virtual void setTexture(const Texture *texture, ShaderSampler sampler) {}
     virtual void setShader(const Shader *shader) {}
 
-    virtual void draw(Mesh *mesh) {}
+    virtual void draw(const Mesh *mesh) {}
 };
 
 #include "context/gl.h"
