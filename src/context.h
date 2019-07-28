@@ -10,6 +10,7 @@ typedef unsigned short Index;
 struct Vertex {
     vec3 position;
     vec3 normal;
+    vec4 tangent;
     vec2 texcoord;
     vec4 color;
 
@@ -82,6 +83,7 @@ struct Texture {
 #define SHADER_ATTRIBS(E) \
     E( aPosition ) \
     E( aNormal   ) \
+    E( aTangent  ) \
     E( aTexCoord ) \
     E( aColor    )
 
