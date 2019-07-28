@@ -178,11 +178,14 @@
     <ClInclude Include="..\context\gl.h" />
     <ClInclude Include="..\game.h" />
     <ClInclude Include="..\input.h" />
+    <ClInclude Include="..\material.h" />
     <ClInclude Include="..\math\mat4.h" />
     <ClInclude Include="..\math\vec2.h" />
     <ClInclude Include="..\math\vec3.h" />
     <ClInclude Include="..\math\vec4.h" />
+    <ClInclude Include="..\scene.h" />
     <ClInclude Include="..\stream.h" />
+    <ClInclude Include="..\tga.h" />
     <ClInclude Include="..\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

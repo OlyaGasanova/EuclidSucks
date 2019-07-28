@@ -30,6 +30,9 @@
       <Filter>math</Filter>
     </ClInclude>
     <ClInclude Include="..\stream.h" />
+    <ClInclude Include="..\scene.h" />
+    <ClInclude Include="..\material.h" />
+    <ClInclude Include="..\tga.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

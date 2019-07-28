@@ -5,8 +5,7 @@
 #include "context.h"
 #include "utils.h"
 #include "camera.h"
-
-Context *ctx = NULL;
+#include "scene.h"
 
 #define MAX_TIME_STEP_MS 20
 
@@ -14,15 +13,8 @@ namespace Game {
     int     lastTime;
     int     fpsTime;
     int     frame;
-    Camera  *camera;
 
-// test
-    Buffer  *iBuffer;
-    Buffer  *vBuffer;
-    Mesh    *mesh;
-    Texture *texture;
-    Shader  *shader;
-// ----
+    Scene   *scene;
 
     void init() {
         ctx = createContext(GAPI_GL);
@@ -31,96 +23,18 @@ namespace Game {
         fpsTime = lastTime;
         frame = 0;
 
-        camera = new Camera(vec3(0.0f, 1.0f, 0.0f), vec3(0.0f));
-
-    // test
-        { // test geometry
-            {
-                const Index indices[] = { 0, 1, 2, 0, 2, 3 };
-
-                Buffer::Desc desc;
-                desc.flags  = BUF_INDEX;
-                desc.count  = 6;
-                desc.stride = sizeof(Index);
-                desc.data   = indices;
-
-                iBuffer = ctx->createBuffer(desc);
-            }
-
-            {
-                const Vertex vertices[] = {
-                    Vertex( vec3(-32, 0, -32), vec3(0, 1, 0), vec2( 0,  0), vec4(1, 1, 1, 1) ), 
-                    Vertex( vec3( 32, 0, -32), vec3(0, 1, 0), vec2(32,  0), vec4(1, 1, 1, 1) ),
-                    Vertex( vec3( 32, 0,  32), vec3(0, 1, 0), vec2(32, 32), vec4(1, 1, 1, 1) ),
-                    Vertex( vec3(-32, 0,  32), vec3(0, 1, 0), vec2( 0, 32), vec4(1, 1, 1, 1) ),
-                };
-
-                Buffer::Desc desc;
-                desc.flags  = BUF_VERTEX;
-                desc.count  = 4;
-                desc.stride = sizeof(Vertex);
-                desc.data   = vertices;
-
-                vBuffer = ctx->createBuffer(desc);
-            }
-
-            {
-                Mesh::Desc desc;
-                desc.iBuffer = iBuffer;
-                desc.vBuffer = vBuffer;
-                desc.vStart  = 0;
-
-                mesh = ctx->createMesh(desc);
-            }
-        }
-
-        { // test texture
-            uint32 data[64 * 64];
-            for (int y = 0; y < 64; y++) {
-                for (int x = 0; x < 64; x++) {
-                    data[y * 64 + x] = (((x / 32) ^ (y / 32)) & 1) ? 0xFF808080 : 0xFFC0C0C0;
-                }
-            }
-            const void *mips[] = { data };
-
-            Texture::Desc desc;
-            desc.flags   = TEX_REPEAT | TEX_GEN_MIPS;
-            desc.width   = 64;
-            desc.height  = 64;
-            desc.levels  = 1;
-            desc.format  = Texture::RGBA8;
-            desc.data    = mips;
-
-            texture = ctx->createTexture(desc);
-        }
-
-        { // test shader
-            Shader::Desc desc;
-            desc.data = readFile("shaders/base.glsl", desc.size);
-
-            shader = ctx->createShader(desc);
-
-            delete[] desc.data;
-        }
-    // ----
+        FileStream stream("scenes/scene1.scn", FileStream::MODE_READ);
+        scene = new Scene(&stream);
     }
 
     void deinit() {
-        delete camera;
-        ctx->destroyMesh(mesh);
-        ctx->destroyShader(shader);
-        ctx->destroyBuffer(iBuffer);
-        ctx->destroyBuffer(vBuffer);
-        ctx->destroyTexture(texture);
+        delete scene;
 
         destroyContext(ctx);
     }
 
     void updateStep() {
-        // TODO update player collision, camera position and orientation
-        camera->aspect = (float)ctx->width / (float)ctx->height;
-        camera->control();
-        camera->update();
+        scene->update();
     }
 
     bool update() {
@@ -143,15 +57,14 @@ namespace Game {
     }
 
     void render() {
+        ctx->setDepthWrite(true);
+        ctx->setDepthTest(true);
+        ctx->setCullFace(CULL_BACK);
+
         ctx->setViewport(0, 0, ctx->width, ctx->height);
         ctx->clear(CLEAR_MASK_ALL, vec4(0.4f, 0.7f, 1.0f, 1.0));
 
-    // test
-        ctx->setShader(shader);
-        ctx->setTexture(texture, sDiffuse);
-        shader->setParam(uViewProj, camera->mViewProj);
-        ctx->draw(mesh);
-    // ----
+        scene->render();
 
         ctx->present();
 

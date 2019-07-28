@@ -26,10 +26,10 @@ enum BufferFlag {
 struct Buffer  {
 
     struct Desc {
-        uint16      flags;
-        uint16      stride;
-        uint32      count;
-        const void  *data;
+        uint16  flags;
+        uint16  stride;
+        uint32  count;
+        void    *data;
 
         DESC_CTOR
     } desc;
@@ -59,14 +59,14 @@ struct Texture {
     };
 
     struct Desc {
-        uint16      flags;
-        uint16      width;
-        uint16      height;
-        uint16      depth;
-        uint16      slices;
-        uint16      levels;
-        Format      format;
-        const void  **data;
+        uint16  flags;
+        uint16  width;
+        uint16  height;
+        uint16  depth;
+        uint16  slices;
+        uint16  levels;
+        Format  format;
+        void    *data;
 
         DESC_CTOR
     } desc;
@@ -91,8 +91,8 @@ struct Texture {
 
 #define SHADER_UNIFORMS(E) \
     E( uViewProj   ) \
-    E( uViewPos    ) \
-    E( uLightPos   ) \
+    E( uModel      ) \
+    E( uLightDir   ) \
     E( uLightColor )
 
 enum ShaderAttrib   { SHADER_ATTRIBS(DECL_ENUM)  aMAX };
@@ -102,8 +102,8 @@ enum ShaderUniform  { SHADER_UNIFORMS(DECL_ENUM) uMAX };
 struct Shader {
 
     struct Desc {
-        uint32      size;
-        const void  *data;
+        uint32  size;
+        void    *data;
 
         DESC_CTOR
     } desc;
@@ -137,6 +137,12 @@ enum ClearMask {
     CLEAR_MASK_ALL     = CLEAR_MASK_COLOR | CLEAR_MASK_DEPTH | CLEAR_MASK_STENCIL,
 };
 
+enum CullMode {
+    CULL_NONE,
+    CULL_BACK,
+    CULL_FRONT,
+};
+
 const vec4 COLOR_BLACK = {0.0f, 0.0f, 0.0f, 0.0f};
 
 struct Context {
@@ -162,6 +168,10 @@ struct Context {
     virtual void setTexture(const Texture *texture, ShaderSampler sampler) {}
     virtual void setShader(const Shader *shader) {}
 
+    virtual void setDepthWrite(bool enable) {}
+    virtual void setDepthTest(bool enable) {}
+    virtual void setCullFace(CullMode mode) {}
+
     virtual void draw(const Mesh *mesh, int iStart = -1, int iCount = -1) {}
 };
 
@@ -172,6 +182,8 @@ enum GAPI {
 //    GAPI_D3D11,
 //    GAPI_VULKAN,
 };
+
+Context *ctx = NULL;
 
 Context* createContext(GAPI gapi) {
     switch (gapi) {

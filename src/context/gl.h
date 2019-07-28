@@ -72,10 +72,13 @@ struct TextureGL : Texture {
     GLuint id;
 
     TextureGL(const Texture::Desc &desc) : Texture(desc) {
+        uint8 *data = (uint8*)desc.data;
+
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id);
         for (int i = 0; i < desc.levels; i++) {
-            glTexImage2D(GL_TEXTURE_2D, i, GL_RGBA8, desc.width >> i, desc.height >> i, 0, GL_RGBA, GL_UNSIGNED_BYTE, desc.data[i]);
+            glTexImage2D(GL_TEXTURE_2D, i, GL_RGBA8, desc.width >> i, desc.height >> i, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            data += (desc.width >> i) * (desc.height >> 1) * 4;
         }
 
         bool genmips = (desc.flags & TEX_GEN_MIPS);
@@ -322,6 +325,23 @@ struct ContextGL : Context {
     virtual void setShader(const Shader *shader) override {
         const ShaderGL *shd = (ShaderGL*)shader;
         glUseProgram(shd->id);
+    }
+
+    virtual void setDepthWrite(bool enable) override {
+        glDepthMask(enable);
+    }
+    
+    virtual void setDepthTest(bool enable) override {
+        enable ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
+    }
+
+    virtual void setCullFace(CullMode mode) override {
+        switch (mode) {
+            case CULL_NONE  : glDisable(GL_CULL_FACE); return;
+            case CULL_BACK  : glCullFace(GL_BACK); break;
+            case CULL_FRONT : glCullFace(GL_FRONT); break;
+        }
+        glEnable(GL_CULL_FACE);
     }
 
     virtual void draw(const Mesh *mesh, int iStart, int iCount) override {

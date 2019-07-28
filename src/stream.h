@@ -11,7 +11,17 @@ struct Stream {
     virtual void setPos(int newPos) {}
     virtual void read(void *data, int size) {}
     virtual void write(void *data, int size) {}
-    void skip(int size) { setPos(pos + size); }
+    
+    void skip(int size) {
+        setPos(pos + size);
+    }
+    
+    void readStr(char *buffer) {
+        uint8 length;
+        read(&length, sizeof(length));
+        read(buffer, length);
+        buffer[length] = '\0';
+    }
 };
 
 
