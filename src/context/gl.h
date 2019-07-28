@@ -41,8 +41,14 @@
     PFNGLDISABLEVERTEXATTRIBARRAYPROC   glDisableVertexAttribArray;
     PFNGLVERTEXATTRIBPOINTERPROC        glVertexAttribPointer;
     PFNGLGETPROGRAMIVPROC               glGetProgramiv;
+// Common
+    PFNGLSTENCILFUNCSEPARATEPROC        glStencilFuncSeparate;
+    PFNGLSTENCILMASKSEPARATEPROC        glStencilMaskSeparate;
+    PFNGLSTENCILOPSEPARATEPROC          glStencilOpSeparate;
+    PFNGLBLENDFUNCSEPARATEPROC          glBlendFuncSeparate;
 
 #define GetProcOGL(x) x=(decltype(x))wglGetProcAddress(#x);
+
 
 struct BufferGL : Buffer {
     GLuint id;
@@ -67,6 +73,7 @@ struct BufferGL : Buffer {
         glDeleteBuffers(1, &id);
     }
 };
+
 
 struct TextureGL : Texture {
     GLuint id;
@@ -104,6 +111,7 @@ struct TextureGL : Texture {
         glDeleteTextures(1, &id);
     }
 };
+
 
 struct ShaderGL : Shader {
     GLuint id;
@@ -183,17 +191,8 @@ struct ShaderGL : Shader {
     virtual ~ShaderGL() {
         glDeleteProgram(id);
     }
-
-    virtual void setParam(ShaderUniform uniform, const vec4 &value, int count) override {
-        if (uid[uniform] == -1) return;
-        glUniform4fv(uid[uniform], count, (GLfloat*)&value);
-    }
-
-    virtual void setParam(ShaderUniform uniform, const mat4 &value, int count) override {
-        if (uid[uniform] == -1) return;
-        glUniformMatrix4fv(uid[uniform], count, false, (GLfloat*)&value);
-    }
 };
+
 
 struct MeshGL : Mesh {
     GLuint id;
@@ -226,8 +225,132 @@ struct MeshGL : Mesh {
     }
 };
 
+
+static const GLenum BLEND_FUNC[] = {
+    GL_ZERO,
+    GL_ONE,
+    GL_SRC_COLOR,
+    GL_ONE_MINUS_SRC_COLOR,
+    GL_DST_COLOR,
+    GL_ONE_MINUS_DST_COLOR,
+    GL_SRC_ALPHA,
+    GL_ONE_MINUS_SRC_ALPHA,
+    GL_DST_ALPHA,
+    GL_ONE_MINUS_DST_ALPHA,
+    GL_SRC1_COLOR,
+    GL_ONE_MINUS_SRC1_COLOR,
+    GL_SRC1_ALPHA,
+    GL_ONE_MINUS_SRC1_ALPHA,
+};
+
+static const GLenum STENCIL_OP[] = {
+    GL_KEEP,
+    GL_ZERO,
+    GL_REPLACE,
+    GL_INCR,
+    GL_DECR,
+};
+
+static const GLenum COMPARE_FUNC[] = {
+    GL_ALWAYS,
+    GL_NEVER,
+    GL_EQUAL,
+    GL_NOTEQUAL,
+    GL_LESS,
+    GL_LEQUAL,
+    GL_GREATER,
+    GL_GEQUAL,
+};
+
+struct StateGL : State {
+    StateGL(const State::Desc &desc) : State(desc) {}
+
+    void bind(const State *curState, uint8 stencilRef) {
+        #define DIFF(param) (!curState || desc.##param != curState->desc.##param)
+
+        if DIFF(colorMask) {
+            glColorMask((desc.colorMask & COLOR_MASK_R), 
+                        (desc.colorMask & COLOR_MASK_G), 
+                        (desc.colorMask & COLOR_MASK_B), 
+                        (desc.colorMask & COLOR_MASK_A));
+        }
+
+        if DIFF(blending) {
+            desc.blending ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
+        }
+
+        if (desc.blending && (DIFF(blend.colorOpSrc) || DIFF(blend.colorOpDst) || DIFF(blend.alphaOpSrc) || DIFF(blend.alphaOpDst))) {
+            glBlendFuncSeparate(BLEND_FUNC[desc.blend.colorOpSrc], BLEND_FUNC[desc.blend.colorOpDst],
+                                BLEND_FUNC[desc.blend.alphaOpSrc], BLEND_FUNC[desc.blend.alphaOpDst]);
+        }
+
+        if DIFF(depthWrite) {
+            glDepthMask(desc.depthWrite);
+        }
+
+        if DIFF(depthTest) {
+            desc.depthTest ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
+        }
+
+        if DIFF(stencilTest) {
+            desc.stencilTest ? glEnable(GL_STENCIL_TEST) : glDisable(GL_STENCIL_TEST);
+        }
+
+        if (desc.stencilTest) {
+            for (int i = 0; i < FACE_MAX; i++) {
+                const State::Desc::Stencil &f = desc.stencil[i];
+
+                GLenum face = (i == FACE_BACK) ? GL_BACK : GL_FRONT;
+
+                if (DIFF(stencil[i].sfail) || DIFF(stencil[i].zfail) || DIFF(stencil[i].zpass)) {
+                    glStencilOpSeparate(face, STENCIL_OP[f.sfail], STENCIL_OP[f.zfail], STENCIL_OP[f.zpass]);
+                }
+
+                if DIFF(stencil[i].writeMask) {
+                    glStencilMaskSeparate(face, f.writeMask);
+                }
+
+                if (DIFF(stencil[i].compare) || DIFF(stencil[i].readMask)) {
+                    glStencilFuncSeparate(face, COMPARE_FUNC[f.compare], stencilRef, f.readMask);
+                }
+            }
+        }
+
+        if DIFF(cullFace) {
+            switch (desc.cullFace) {
+                case FACE_FRONT : glCullFace(GL_FRONT);    break;
+                case FACE_BACK  : glCullFace(GL_BACK);     break;
+                case FACE_NONE  : glDisable(GL_CULL_FACE); return;
+            }
+            if (!curState || curState->desc.cullFace == FACE_NONE) {
+                glEnable(GL_CULL_FACE);
+            }
+        }
+
+        if (desc.shader && DIFF(shader)) {
+            glUseProgram(((ShaderGL*)desc.shader)->id);
+        }
+
+        #undef DIFF
+    }
+
+    void setStencilRef(uint8 stencilRef) {
+        const State::Desc::Stencil &f = desc.stencil[FACE_FRONT];
+        const State::Desc::Stencil &b = desc.stencil[FACE_BACK];
+
+        glStencilFuncSeparate(GL_FRONT, COMPARE_FUNC[f.compare], stencilRef, f.readMask);
+        glStencilFuncSeparate(GL_BACK,  COMPARE_FUNC[b.compare], stencilRef, b.readMask);
+    }
+};
+
+
 struct ContextGL : Context {
-    ContextGL() {
+    const State *curState;
+    State *defState;
+
+    uint8 stencilRef;
+
+    ContextGL() : Context(), curState(NULL), stencilRef(0xFF) {
     // Buffers
         GetProcOGL( glGenBuffers );
         GetProcOGL( glDeleteBuffers );
@@ -263,10 +386,24 @@ struct ContextGL : Context {
         GetProcOGL( glDisableVertexAttribArray );
         GetProcOGL( glVertexAttribPointer );
         GetProcOGL( glGetProgramiv );
+    // Common
+        GetProcOGL( glStencilFuncSeparate );
+        GetProcOGL( glStencilMaskSeparate );
+        GetProcOGL( glStencilOpSeparate );
+        GetProcOGL( glBlendFuncSeparate );
+
+    // init default render state
+        State::Desc desc;
+        desc.colorMask  = COLOR_MASK_ALL;
+        desc.depthTest  = true;
+        desc.depthWrite = true;
+        desc.cullFace   = FACE_BACK;
+
+        defState = createState(desc);
     }
 
     virtual ~ContextGL() {
-        //
+        destroyState(defState);
     }
 
     virtual void present() override {
@@ -288,6 +425,14 @@ struct ContextGL : Context {
 
     virtual Mesh* createMesh(const Mesh::Desc &desc) override {
         return new MeshGL(desc);
+    }
+
+    virtual State* createState(const State::Desc &desc) override {
+        return new StateGL(desc);
+    }
+
+    virtual void resetState() override {
+        setState(defState);
     }
 
     virtual void clear(int clearMask, const vec4 &color, float depth, int stencil) override {
@@ -322,26 +467,37 @@ struct ContextGL : Context {
         glBindTexture(GL_TEXTURE_2D, tex->id);
     }
 
-    virtual void setShader(const Shader *shader) override {
-        const ShaderGL *shd = (ShaderGL*)shader;
-        glUseProgram(shd->id);
-    }
-
-    virtual void setDepthWrite(bool enable) override {
-        glDepthMask(enable);
-    }
-    
-    virtual void setDepthTest(bool enable) override {
-        enable ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
-    }
-
-    virtual void setCullFace(CullMode mode) override {
-        switch (mode) {
-            case CULL_NONE  : glDisable(GL_CULL_FACE); return;
-            case CULL_BACK  : glCullFace(GL_BACK); break;
-            case CULL_FRONT : glCullFace(GL_FRONT); break;
+    virtual void setState(const State *state) override {
+        if (state == curState) {
+            return;
         }
-        glEnable(GL_CULL_FACE);
+
+        ((StateGL*)state)->bind(curState, stencilRef);
+
+        curState = state;
+    }
+
+    virtual void setStencilRef(uint8 ref) override {
+        if (stencilRef == ref) {
+            return;
+        }
+        stencilRef = ref;
+
+        setStencilRef(stencilRef);
+    }
+
+    virtual void setUniform(ShaderUniform uniform, const vec4 &value, int count = 1) override {
+        ASSERT(curState && curState->desc.shader);
+        GLint uid = ((ShaderGL*)curState->desc.shader)->uid[uniform];
+        if (uid == -1) return;
+        glUniform4fv(uid, count, (GLfloat*)&value);
+    }
+
+    virtual void setUniform(ShaderUniform uniform, const mat4 &value, int count = 1) override {
+        ASSERT(curState && curState->desc.shader);
+        GLint uid = ((ShaderGL*)curState->desc.shader)->uid[uniform];
+        if (uid == -1) return;
+        glUniformMatrix4fv(uid, count, false, (GLfloat*)&value);
     }
 
     virtual void draw(const Mesh *mesh, int iStart, int iCount) override {

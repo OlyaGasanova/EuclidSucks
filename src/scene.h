@@ -3,93 +3,13 @@
 
 #include "utils.h"
 #include "context.h"
-#include "material.h"
+#include "entity.h"
 
 struct Scene {
-
-    struct Object {
-
-        enum {
-            TYPE_MESH,
-            TYPE_SUN,
-            TYPE_START,
-        };
-
-        int32    type;
-        mat4     matrix;
-        Mesh     *mesh;
-        Material *material;
-
-        Object(Stream *stream) : mesh(NULL), material(NULL) {
-            stream->read(&type, sizeof(type));
-            stream->read(&matrix, sizeof(matrix));
-
-            if (type == TYPE_MESH) {
-                // read material
-                material = new Material(stream);
-
-                Buffer *iBuffer;
-                Buffer *vBuffer;
-
-                { // read indices
-                    int32 count;
-                    stream->read(&count, sizeof(count));
-                    Index *indices = new Index[count];
-                    stream->read(indices, count * sizeof(Index));
-
-                    Buffer::Desc desc;
-                    desc.flags  = BUF_INDEX;
-                    desc.count  = count;
-                    desc.stride = sizeof(Index);
-                    desc.data   = indices;
-
-                    iBuffer = ctx->createBuffer(desc);
-
-                    delete[] indices;
-                }
-
-                { // read vertices
-                    int32 count;
-                    stream->read(&count, sizeof(count));
-                    Vertex *vertices = new Vertex[count];
-                    stream->read(vertices, count * sizeof(Vertex));
-
-                    Buffer::Desc desc;
-                    desc.flags  = BUF_VERTEX;
-                    desc.count  = count;
-                    desc.stride = sizeof(Vertex);
-                    desc.data   = vertices;
-
-                    vBuffer = ctx->createBuffer(desc);
-
-                    delete[] vertices;
-                }
-
-                { // create mesh
-                    Mesh::Desc desc;
-                    desc.iBuffer = iBuffer;
-                    desc.vBuffer = vBuffer;
-                    desc.vStart  = 0;
-
-                    mesh = ctx->createMesh(desc);
-                }
-            }
-        }
-
-        ~Object() {
-            if (mesh) {
-                ctx->destroyBuffer(mesh->desc.iBuffer);
-                ctx->destroyBuffer(mesh->desc.vBuffer);
-                ctx->destroyMesh(mesh);
-            }
-            delete material;
-        }
-    };
-
     Camera *camera;
 
     int32  objectsCount;
-    Object **objects;
+    Entity **entities;
 
     int    start;
     int    sun;
@@ -98,18 +18,18 @@ struct Scene {
         camera = new Camera(vec3(0.0f), vec3(0.0f));
 
         stream->read(&objectsCount, sizeof(objectsCount));
-        objects = new Object*[objectsCount];
+        entities = new Entity*[objectsCount];
 
         for (int i = 0; i < objectsCount; i++) {
-            objects[i] = new Object(stream);
+            entities[i] = new Entity(stream);
             
-            switch (objects[i]->type) {
-                case Object::TYPE_MESH :
+            switch (entities[i]->type) {
+                case Entity::TYPE_MESH :
                     break;
-                case Object::TYPE_SUN :
+                case Entity::TYPE_SUN :
                     sun = i;
                     break;
-                case Object::TYPE_START :
+                case Entity::TYPE_START :
                     start = i;
                     break;
                 default : ASSERT(false);
@@ -117,7 +37,7 @@ struct Scene {
         }
 
         if (start >= 0) {
-            camera->pos = objects[start]->matrix.getPos();
+            camera->pos = entities[start]->matrix.getPos();
         }
 
         camera->pos = camera->pos + vec3(0.0f, 1.0f, 0.0f);
@@ -125,9 +45,9 @@ struct Scene {
 
     ~Scene() {
         for (int i = 0; i < objectsCount; i++) {
-            delete objects[i];
+            delete entities[i];
         }
-        delete[] objects;
+        delete[] entities;
 
         delete camera;
     }
@@ -144,25 +64,24 @@ struct Scene {
         vec4 lightDir   = vec4(0.3333f);
 
         if (sun >= 0) {
-            lightDir = objects[sun]->matrix.inverseOrtho().dir();
+            lightDir = entities[sun]->matrix.inverseOrtho().dir();
         }
 
         for (int i = 0; i < objectsCount; i++) {
-            Object *obj = objects[i];
+            Entity *entity = entities[i];
 
-            if (obj->type != Object::TYPE_MESH) {
+            if (entity->type != Entity::TYPE_MESH) {
                 continue;
             }
 
-            obj->material->bind();
+            entity->material->bind();
 
-            obj->material->shader->setParam(uViewProj,   camera->mViewProj);
-            obj->material->shader->setParam(uModel,      obj->matrix);
-            obj->material->shader->setParam(uLightDir,   lightDir);
-            obj->material->shader->setParam(uLightColor, lightColor);
+            ctx->setUniform(uViewProj,   camera->mViewProj);
+            ctx->setUniform(uModel,      entity->matrix);
+            ctx->setUniform(uLightDir,   lightDir);
+            ctx->setUniform(uLightColor, lightColor);
 
-
-            ctx->draw(objects[i]->mesh);
+            ctx->draw(entities[i]->mesh);
         }
     }
 };
