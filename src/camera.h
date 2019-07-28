@@ -15,7 +15,9 @@ struct Camera {
     mat4  mView;
     mat4  mViewProj;
 
-    Camera(const vec3 &pos, const vec3 &rot) : pos(pos), rot(rot), fov(90.0f), znear(0.1f), zfar(1024.0f) {}
+    Camera(const vec3 &pos, const vec3 &rot) : pos(pos), rot(rot), fov(90.0f), znear(0.1f), zfar(1024.0f) {
+        mView.identity();
+    }
 
     void update() {
         mProj = mat4::perspective(fov, aspect, znear, zfar);

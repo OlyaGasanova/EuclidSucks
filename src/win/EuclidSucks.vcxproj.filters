@@ -9,26 +9,30 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\math\vec4.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\math\vec2.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\math\vec3.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\math\mat4.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\camera.h" />
-    <ClInclude Include="..\..\..\context.h" />
-    <ClInclude Include="..\..\..\game.h" />
-    <ClInclude Include="..\..\..\utils.h" />
-    <ClInclude Include="..\..\..\context\gl.h">
+    <ClInclude Include="..\camera.h" />
+    <ClInclude Include="..\context.h" />
+    <ClInclude Include="..\game.h" />
+    <ClInclude Include="..\input.h" />
+    <ClInclude Include="..\utils.h" />
+    <ClInclude Include="..\context\gl.h">
       <Filter>context</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\input.h" />
+    <ClInclude Include="..\math\vec2.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\math\vec3.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\math\vec4.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\math\mat4.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\stream.h" />
+    <ClInclude Include="..\scene.h" />
+    <ClInclude Include="..\material.h" />
+    <ClInclude Include="..\tga.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

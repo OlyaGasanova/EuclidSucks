@@ -1,3 +1,18 @@
+#ifdef _DEBUG
+    #define _CRTDBG_MAP_ALLOC
+    #include "crtdbg.h"
+    #define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
+    #define new DEBUG_NEW
+#endif
+
+// hint for the driver to use discrete GPU
+extern "C" {
+// NVIDIA
+    __declspec(dllexport) int NvOptimusEnablement = 1;
+// AMD
+    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+
 #include "game.h"
 
 float osDeltaTime;
@@ -31,7 +46,7 @@ HGLRC initGL(HWND hWnd) {
     pfd.dwFlags    = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
     pfd.cColorBits = 32;
     pfd.cDepthBits = 24;
-	
+
     int format = ChoosePixelFormat(osDC, &pfd);
     SetPixelFormat(osDC, format, &pfd);
     HGLRC hRC = wglCreateContext(osDC);
@@ -45,6 +60,7 @@ HGLRC initGL(HWND hWnd) {
     ASSERT(wglChoosePixelFormatARB);
     ASSERT(wglCreateContextAttribsARB);
 
+// initialize OGL for main window
     osDC = GetDC(hWnd);
 
     const int pixelAttribs[] = {
@@ -106,15 +122,41 @@ InputKey remapMouse(UINT msg) {
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
         // window
+        case WM_ACTIVATE :
+            Input::reset();
+            break;
         case WM_SIZE :
             ctx->resize(LOWORD(lParam), HIWORD(lParam));
             break;
         case WM_DESTROY:
             PostQuitMessage(0);
             break;
-        case WM_KEYDOWN :
-        case WM_KEYUP   :
-            Input::setDown(remapKey(wParam), msg != WM_KEYUP);
+        case WM_CHAR       :
+        case WM_SYSCHAR    :
+            // TODO text input
+            break;
+        case WM_KEYDOWN    :
+        case WM_KEYUP      :
+        case WM_SYSKEYDOWN :
+        case WM_SYSKEYUP   :
+            if (msg == WM_SYSKEYDOWN && wParam == VK_RETURN) { // Alt + Enter - switch to fullscreen
+                static WINDOWPLACEMENT pLast;
+                DWORD style = GetWindowLong(hWnd, GWL_STYLE);
+                if (style & WS_OVERLAPPEDWINDOW) {
+                    MONITORINFO mInfo;
+                    mInfo.cbSize = sizeof(mInfo);
+                    if (GetWindowPlacement(hWnd, &pLast) && GetMonitorInfo(MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY), &mInfo)) {
+                        RECT &r = mInfo.rcMonitor;
+                        SetWindowLong(hWnd, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
+                        MoveWindow(hWnd, r.left, r.top, r.right - r.left, r.bottom - r.top, FALSE);
+                    }
+                } else {
+                    SetWindowLong(hWnd, GWL_STYLE, style | WS_OVERLAPPEDWINDOW);
+                    SetWindowPlacement(hWnd, &pLast);
+                }
+                break;
+            }
+            Input::setDown(remapKey(wParam), msg != WM_KEYUP && msg != WM_SYSKEYUP);
             break;
         case WM_LBUTTONDOWN   :
         case WM_LBUTTONUP     :
@@ -151,6 +193,13 @@ int main(int argc, char** argv)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 #endif
 {
+#ifdef _DEBUG
+    _CrtMemState _msBegin, _msEnd, _msDiff;
+    _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDOUT);
+    _CrtMemCheckpoint(&_msBegin);
+#endif
+
     RECT r = { 0, 0, 854, 480 };
     AdjustWindowRect(&r, WS_OVERLAPPEDWINDOW, false);
 
@@ -186,9 +235,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
     };
 
-    Game::free();
+    Game::deinit();
 
     freeGL(hWnd, hRC);
+
+ #ifdef _DEBUG
+    _CrtMemCheckpoint(&_msEnd);
+
+    if (_CrtMemDifference(&_msDiff, &_msBegin, &_msEnd) > 0) {
+        _CrtDumpMemoryLeaks();
+        system("pause");
+    }
+#endif
 
     return 0;
 }

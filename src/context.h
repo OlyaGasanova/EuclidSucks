@@ -3,6 +3,8 @@
 
 #include "utils.h"
 
+#define DESC_CTOR Desc() { memset(this, 0, sizeof(*this)); }
+
 typedef unsigned short Index;
 
 struct Vertex {
@@ -15,38 +17,61 @@ struct Vertex {
     Vertex(const vec3 &p, const vec3 &n, const vec2 &t, const vec4 &c) : position(p), normal(n), texcoord(t), color(c) {}
 };
 
-enum BufferType {
-    BUFFER_TYPE_INDEX,
-    BUFFER_TYPE_VERTEX,
+enum BufferFlag {
+    BUF_INDEX   = (1 << 0),
+    BUF_VERTEX  = (1 << 1),
+    BUF_DYNAMIC = (1 << 2),
 };
 
 struct Buffer  {
-    BufferType type;
-    int        stride;
-    int        count;
 
-    Buffer(BufferType type, int stride, int count) : type(type), stride(stride), count(count) {}
+    struct Desc {
+        uint16  flags;
+        uint16  stride;
+        uint32  count;
+        void    *data;
+
+        DESC_CTOR
+    } desc;
+
+    Buffer(const Desc &desc) : desc(desc) {}
     virtual ~Buffer() {}
 };
 
 
-enum TextureFormat {
-    TEX_FMT_RGBA8,
-};
-
-enum TextureOptions {
-    TEX_OPT_REPEAT  = 1,
-    TEX_OPT_NEAREST = 2,
-    TEX_OPT_MIPMAP  = 4,
+enum TextureFlags {
+    TEX_REPEAT   = (1 << 0),
+    TEX_NEAREST  = (1 << 1),
+    TEX_GEN_MIPS = (1 << 2),
+    TEX_CUBEMAP  = (1 << 3),
 };
 
 struct Texture {
-    int           width;
-    int           height;
-    TextureFormat format;
-    uint32        opt;
 
-    Texture(int width, int height, TextureFormat format, uint32 opt) : width(width), height(height), format(format), opt(opt) {}
+    enum Format {
+        R8,
+        RG8,
+        RGBA8,
+        R16F,
+        RG16F,
+        RGBA16F,
+        D24S8,
+    };
+
+    struct Desc {
+        uint16  flags;
+        uint16  width;
+        uint16  height;
+        uint16  depth;
+        uint16  slices;
+        uint16  levels;
+        Format  format;
+        void    *data;
+
+        DESC_CTOR
+    } desc;
+
+    Texture(const Desc &desc) : desc(desc) {}
     virtual ~Texture() {}
 };
 
@@ -66,8 +91,8 @@ struct Texture {
 
 #define SHADER_UNIFORMS(E) \
     E( uViewProj   ) \
-    E( uViewPos    ) \
-    E( uLightPos   ) \
+    E( uModel      ) \
+    E( uLightDir   ) \
     E( uLightColor )
 
 enum ShaderAttrib   { SHADER_ATTRIBS(DECL_ENUM)  aMAX };
@@ -75,6 +100,15 @@ enum ShaderSampler  { SHADER_SAMPLERS(DECL_ENUM) sMAX };
 enum ShaderUniform  { SHADER_UNIFORMS(DECL_ENUM) uMAX };
 
 struct Shader {
+
+    struct Desc {
+        uint32  size;
+        void    *data;
+
+        DESC_CTOR
+    } desc;
+
+    Shader(const Desc &desc) : desc(desc) {}
     virtual ~Shader() {}
     virtual void setParam(ShaderUniform uniform, const vec4 &value, int count = 1) {}
     virtual void setParam(ShaderUniform uniform, const mat4 &value, int count = 1) {}
@@ -82,13 +116,16 @@ struct Shader {
 
 
 struct Mesh {
-    Buffer *iBuffer;
-    Buffer *vBuffer;
-    int    iStart;
-    int    iCount;
-    int    vStart;
 
-    Mesh(Buffer *iBuffer, Buffer *vBuffer, int iStart, int iCount, int vStart) : iBuffer(iBuffer), vBuffer(vBuffer), iStart(iStart), iCount(iCount), vStart(vStart) {}
+    struct Desc {
+        Buffer  *iBuffer;
+        Buffer  *vBuffer;
+        uint32  vStart;
+
+        DESC_CTOR
+    } desc;
+
+    Mesh(const Desc &desc) : desc(desc) {}
     virtual ~Mesh() {}
 };
 
@@ -100,6 +137,12 @@ enum ClearMask {
     CLEAR_MASK_ALL     = CLEAR_MASK_COLOR | CLEAR_MASK_DEPTH | CLEAR_MASK_STENCIL,
 };
 
+enum CullMode {
+    CULL_NONE,
+    CULL_BACK,
+    CULL_FRONT,
+};
+
 const vec4 COLOR_BLACK = {0.0f, 0.0f, 0.0f, 0.0f};
 
 struct Context {
@@ -109,15 +152,15 @@ struct Context {
     virtual ~Context() {}
     virtual void present() {};
 
-    virtual Buffer*  createBuffer(BufferType type, int stride, int count, const void *data)                                    { return NULL; }
-    virtual Shader*  createShader(int size, const void *data) = 0                                                              { return NULL; }
-    virtual Texture* createTexture(int width, int height, TextureFormat format, const uint32 opt, int mips, const void **data) { return NULL; }
-    virtual Mesh*    createMesh(Buffer *iBuffer, Buffer *vBuffer, int iStart, int iCount, int vStart)                          { return NULL; }
+    virtual Buffer*  createBuffer   (const Buffer::Desc  &desc)  { return NULL; }
+    virtual Shader*  createShader   (const Shader::Desc  &desc)  { return NULL; }
+    virtual Texture* createTexture  (const Texture::Desc &desc)  { return NULL; }
+    virtual Mesh*    createMesh     (const Mesh::Desc    &desc)  { return NULL; }
 
-    virtual void destroyBuffer(Buffer *buffer)    { delete buffer;  }
-    virtual void destroyShader(Shader *shader)    { delete shader;  }
-    virtual void destroyTexture(Texture *texture) { delete texture; }
-    virtual void destroyMesh(Mesh *mesh)          { delete mesh;    }
+    virtual void destroyBuffer   (Buffer  *buffer)   { delete buffer;  }
+    virtual void destroyShader   (Shader  *shader)   { delete shader;  }
+    virtual void destroyTexture  (Texture *texture)  { delete texture; }
+    virtual void destroyMesh     (Mesh    *mesh)     { delete mesh;    }
 
     virtual void resize(int nWidth, int nHeight) { width = nWidth; height = nHeight; }
     virtual void clear(int clearMask, const vec4 &color = COLOR_BLACK, float depth = 1.0f, int stencil = 0) {}
@@ -125,7 +168,11 @@ struct Context {
     virtual void setTexture(const Texture *texture, ShaderSampler sampler) {}
     virtual void setShader(const Shader *shader) {}
 
-    virtual void draw(const Mesh *mesh) {}
+    virtual void setDepthWrite(bool enable) {}
+    virtual void setDepthTest(bool enable) {}
+    virtual void setCullFace(CullMode mode) {}
+
+    virtual void draw(const Mesh *mesh, int iStart = -1, int iCount = -1) {}
 };
 
 #include "context/gl.h"
@@ -135,6 +182,8 @@ enum GAPI {
 //    GAPI_D3D11,
 //    GAPI_VULKAN,
 };
+
+Context *ctx = NULL;
 
 Context* createContext(GAPI gapi) {
     switch (gapi) {

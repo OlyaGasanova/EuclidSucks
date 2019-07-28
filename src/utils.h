@@ -29,6 +29,13 @@ extern bool   osClose;
 #define DEG2RAD (PI / 180.0f)
 #define RAD2DEG (180.0f / PI)
 
+template <class T>
+inline void swap(T &a, T &b) {
+    T tmp = a;
+    a = b;
+    b = tmp;
+}
+
 template <typename T>
 inline const T& min(const T &a, const T &b) {
     return a < b ? a : b;
@@ -50,25 +57,27 @@ float clamp(float x, float minVal, float maxVal) {
     return x;
 }
 
+struct Color32 {
+    uint8 r, g, b, a;
+};
+
 #include "math/vec2.h"
 #include "math/vec3.h"
 #include "math/vec4.h"
 #include "math/mat4.h"
 
+#include "stream.h"
+
+#include "tga.h"
 
 // file system
-char* readFile(const char *name, int &size) {
-    FILE *f = fopen(name, "rb");
-    if (!f) {
-        ASSERT(false);
-        return NULL;
-    }
-    fseek(f, 0, SEEK_END);
-    size = ftell(f);
-    fseek(f, 0, SEEK_SET);
+char* readFile(const char *name, uint32 &size) {
+    FileStream stream(name, FileStream::MODE_READ);
+    size = stream.size;
+
     char *data = new char[size];
-    size = (int)fread(data, 1, size, f);
-    fclose(f);
+    stream.read(data, size);
+
     return data;
 }
 
