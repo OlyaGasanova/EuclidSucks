@@ -209,11 +209,13 @@ struct MeshGL : Mesh {
         Vertex *v = (Vertex*)NULL + desc.vStart;
         glEnableVertexAttribArray(aPosition);
         glEnableVertexAttribArray(aNormal);
+        glEnableVertexAttribArray(aTangent);
         glEnableVertexAttribArray(aTexCoord);
         glEnableVertexAttribArray(aColor);
 
         glVertexAttribPointer(aPosition, 3, GL_FLOAT, false, vbuf->desc.stride, &v->position);
         glVertexAttribPointer(aNormal,   3, GL_FLOAT, false, vbuf->desc.stride, &v->normal);
+        glVertexAttribPointer(aTangent,  4, GL_FLOAT, false, vbuf->desc.stride, &v->tangent);
         glVertexAttribPointer(aTexCoord, 2, GL_FLOAT, false, vbuf->desc.stride, &v->texcoord);
         glVertexAttribPointer(aColor,    4, GL_FLOAT, false, vbuf->desc.stride, &v->color);
 

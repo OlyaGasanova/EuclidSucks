@@ -51,20 +51,24 @@ def writeMesh(file, mesh):
     indices = []
     dict = {}
     
-    uvs = triMesh.tessface_uv_textures
+    uvs = triMesh.uv_layers.active.data
     
     # get indices (array) and vertices (dictionary)
-    for f in triMesh.tessfaces:
-        for i in range(3):
-            vIndex = f.vertices[i]
+    for f in triMesh.polygons:
+        for i in f.loop_indices:
+            vIndex = triMesh.loops[i].vertex_index
             vertex = triMesh.vertices[vIndex]
             vc = MatGL * vertex.co
-            vn = MatGL * vertex.normal
-            t0 = uvs[0].data[f.index].uv[i]
+            vn = MatGL * triMesh.loops[i].normal
+            vt = MatGL * triMesh.loops[i].tangent
+            bs = triMesh.loops[i].bitangent_sign
+            uv = uvs[i].uv
             
             vp = ( vc.x, vc.y, vc.z,    # position
                    vn.x, vn.y, vn.z,    # normal
-                   t0[0], t0[1],        # texcoord
+                   vt.x, vt.y, vt.z,    # tangent
+                   bs,                  # bitangent sign (b = cross(n, t) * bs)
+                   uv.x, uv.y,          # texcoord
                    1.0, 1.0, 1.0, 1.0 ) # color
                     
             index = dict.setdefault(vp, len(dict))

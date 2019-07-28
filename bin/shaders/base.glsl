@@ -5,6 +5,7 @@ varying vec4 vColor;
 
 attribute vec3 aPosition;
 attribute vec3 aNormal;
+attribute vec4 aTangent;
 attribute vec2 aTexCoord;
 attribute vec4 aColor;
 
