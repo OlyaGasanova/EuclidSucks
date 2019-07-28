@@ -176,6 +176,7 @@
     <ClInclude Include="..\camera.h" />
     <ClInclude Include="..\context.h" />
     <ClInclude Include="..\context\gl.h" />
+    <ClInclude Include="..\entity.h" />
     <ClInclude Include="..\game.h" />
     <ClInclude Include="..\input.h" />
     <ClInclude Include="..\material.h" />
