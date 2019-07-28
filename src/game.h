@@ -57,10 +57,7 @@ namespace Game {
     }
 
     void render() {
-        ctx->setDepthWrite(true);
-        ctx->setDepthTest(true);
-        ctx->setCullFace(CULL_BACK);
-
+        ctx->resetState();
         ctx->setViewport(0, 0, ctx->width, ctx->height);
         ctx->clear(CLEAR_MASK_ALL, vec4(0.4f, 0.7f, 1.0f, 1.0));
 

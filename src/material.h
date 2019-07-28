@@ -5,12 +5,14 @@
 #include "context.h"
 
 struct Material {
-    Shader  *shader;
+    State   *state;
     Texture *texture;
 
     Material(Stream *stream) {
         char name[256];
         char path[256];
+
+        Shader *shader;
 
         {
             stream->readStr(name);
@@ -38,15 +40,27 @@ struct Material {
 
             delete[] desc.data;
         }
+
+        {
+            State::Desc desc;
+            desc.colorMask  = COLOR_MASK_ALL;
+            desc.depthTest  = true;
+            desc.depthWrite = true;
+            desc.cullFace   = FACE_BACK;
+            desc.shader     = shader;
+
+            state = ctx->createState(desc);
+        }
     }
 
     ~Material() {
         ctx->destroyTexture(texture);
-        ctx->destroyShader(shader);
+        ctx->destroyShader(state->desc.shader);
+        ctx->destroyState(state);
     }
 
     void bind() {
-        ctx->setShader(shader);
+        ctx->setState(state);
         ctx->setTexture(texture, sDiffuse);
     }
 };

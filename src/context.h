@@ -110,8 +110,6 @@ struct Shader {
 
     Shader(const Desc &desc) : desc(desc) {}
     virtual ~Shader() {}
-    virtual void setParam(ShaderUniform uniform, const vec4 &value, int count = 1) {}
-    virtual void setParam(ShaderUniform uniform, const mat4 &value, int count = 1) {}
 };
 
 
@@ -137,13 +135,96 @@ enum ClearMask {
     CLEAR_MASK_ALL     = CLEAR_MASK_COLOR | CLEAR_MASK_DEPTH | CLEAR_MASK_STENCIL,
 };
 
-enum CullMode {
-    CULL_NONE,
-    CULL_BACK,
-    CULL_FRONT,
+enum Face {
+    FACE_FRONT,
+    FACE_BACK,
+    FACE_NONE,
+    FACE_MAX = FACE_NONE,
+};
+
+enum StencilOp {
+    STENCIL_KEEP,
+    STENCIL_ZERO,
+    STENCIL_REPLACE,
+    STENCIL_INC,
+    STENCIL_DEC,
+};
+
+enum CompareOp {
+    COMPARE_ALWAYS,
+    COMPARE_NEVER,
+    COMPARE_EQUAL,
+    COMPARE_NOT_EQUAL,
+    COMPARE_LESS,
+    COMPARE_LESS_EQUAL,
+    COMPARE_GREATER,
+    COMPARE_GREATER_EQUAL,
+};
+
+enum BlendOp {
+    BLEND_ZERO,
+    BLEND_ONE,
+    BLEND_SRC_COLOR,
+    BLEND_ONE_MINUS_SRC_COLOR,
+    BLEND_DST_COLOR,
+    BLEND_ONE_MINUS_DST_COLOR,
+    BLEND_SRC_ALPHA,
+    BLEND_ONE_MINUS_SRC_ALPHA,
+    BLEND_DST_ALPHA,
+    BLEND_ONE_MINUS_DST_ALPHA,
+    BLEND_SRC1_COLOR,
+    BLEND_ONE_MINUS_SRC1_COLOR,
+    BLEND_SRC1_ALPHA,
+    BLEND_ONE_MINUS_SRC1_ALPHA,
+};
+
+enum ColorMask {
+    COLOR_MASK_NONE = 0,
+    COLOR_MASK_R    = (1 << 0),
+    COLOR_MASK_G    = (1 << 1),
+    COLOR_MASK_B    = (1 << 2),
+    COLOR_MASK_A    = (1 << 3),
+    COLOR_MASK_ALL  = COLOR_MASK_R | COLOR_MASK_G | COLOR_MASK_B | COLOR_MASK_A,
 };
 
 const vec4 COLOR_BLACK = {0.0f, 0.0f, 0.0f, 0.0f};
+
+struct State {
+
+    struct Desc {
+
+        struct Stencil {
+            StencilOp sfail;
+            StencilOp zfail;
+            StencilOp zpass;
+            CompareOp compare;
+            uint8     readMask;
+            uint8     writeMask;
+        };
+
+        struct Blend {
+            BlendOp colorOpSrc;
+            BlendOp colorOpDst;
+            BlendOp alphaOpSrc;
+            BlendOp alphaOpDst;
+        };
+
+        uint8     colorMask;
+        bool      blending;
+        bool      depthWrite;
+        bool      depthTest;
+        bool      stencilTest;
+        Stencil   stencil[FACE_MAX];
+        Face      cullFace;
+        Blend     blend;
+        Shader    *shader;
+
+        DESC_CTOR
+    } desc;
+
+    State(const Desc &desc) : desc(desc) {}
+    virtual ~State() {}
+};
 
 struct Context {
     int width;
@@ -156,21 +237,26 @@ struct Context {
     virtual Shader*  createShader   (const Shader::Desc  &desc)  { return NULL; }
     virtual Texture* createTexture  (const Texture::Desc &desc)  { return NULL; }
     virtual Mesh*    createMesh     (const Mesh::Desc    &desc)  { return NULL; }
+    virtual State*   createState    (const State::Desc   &desc)  { return NULL; }
 
     virtual void destroyBuffer   (Buffer  *buffer)   { delete buffer;  }
     virtual void destroyShader   (Shader  *shader)   { delete shader;  }
     virtual void destroyTexture  (Texture *texture)  { delete texture; }
     virtual void destroyMesh     (Mesh    *mesh)     { delete mesh;    }
+    virtual void destroyState    (State   *state)    { delete state;   }
+
+    virtual void resetState() {}
 
     virtual void resize(int nWidth, int nHeight) { width = nWidth; height = nHeight; }
     virtual void clear(int clearMask, const vec4 &color = COLOR_BLACK, float depth = 1.0f, int stencil = 0) {}
+
     virtual void setViewport(int x, int y, int width, int height) {}
     virtual void setTexture(const Texture *texture, ShaderSampler sampler) {}
-    virtual void setShader(const Shader *shader) {}
+    virtual void setState(const State *state) {}
+    virtual void setStencilRef(uint8 ref) {}
 
-    virtual void setDepthWrite(bool enable) {}
-    virtual void setDepthTest(bool enable) {}
-    virtual void setCullFace(CullMode mode) {}
+    virtual void setUniform(ShaderUniform uniform, const vec4 &value, int count = 1) {}
+    virtual void setUniform(ShaderUniform uniform, const mat4 &value, int count = 1) {}
 
     virtual void draw(const Mesh *mesh, int iStart = -1, int iCount = -1) {}
 };

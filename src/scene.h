@@ -156,11 +156,10 @@ struct Scene {
 
             obj->material->bind();
 
-            obj->material->shader->setParam(uViewProj,   camera->mViewProj);
-            obj->material->shader->setParam(uModel,      obj->matrix);
-            obj->material->shader->setParam(uLightDir,   lightDir);
-            obj->material->shader->setParam(uLightColor, lightColor);
-
+            ctx->setUniform(uViewProj,   camera->mViewProj);
+            ctx->setUniform(uModel,      obj->matrix);
+            ctx->setUniform(uLightDir,   lightDir);
+            ctx->setUniform(uLightColor, lightColor);
 
             ctx->draw(objects[i]->mesh);
         }
