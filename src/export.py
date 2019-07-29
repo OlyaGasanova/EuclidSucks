@@ -28,14 +28,15 @@ def writeString(file, str):
         file.write(struct.pack('B', b))
 
 def writeMaterial(file, material):
-    texName = ''
-    slot = material.texture_slots[0]
-    if slot != None:
-        texName = bpy.path.basename(slot.texture.image.filepath)
     # write shader file name
     writeString(file, "base.glsl")
-    # write texture file name
-    writeString(file, texName)
+    # write texture file names
+    for i in range(2): # diffuse, normal, specular
+        texName = ''
+        slot = material.texture_slots[i]
+        if slot != None:
+            texName = bpy.path.basename(slot.texture.image.filepath)
+        writeString(file, texName)
 
 def writeMesh(file, mesh):
     # triangulate the mesh first

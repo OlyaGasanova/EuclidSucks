@@ -88,13 +88,14 @@ struct Texture {
     E( aColor    )
 
 #define SHADER_SAMPLERS(E) \
-    E( sDiffuse ) \
-    E( sNormal  )
+    E( sDiffuse  ) \
+    E( sNormal   )
 
 #define SHADER_UNIFORMS(E) \
     E( uViewProj   ) \
     E( uModel      ) \
-    E( uLightDir   ) \
+    E( uViewPos    ) \
+    E( uLightPos   ) \
     E( uLightColor )
 
 enum ShaderAttrib   { SHADER_ATTRIBS(DECL_ENUM)  aMAX };
