@@ -6,7 +6,7 @@
 
 struct Material {
     State   *state;
-    Texture *texture;
+    Texture *textures[sMAX];
 
     Material(Stream *stream) {
         char name[256];
@@ -27,8 +27,13 @@ struct Material {
             delete[] desc.data;
         }
 
-        {
+        for (int i = 0; i < sMAX; i++) {
             stream->readStr(name);
+            if (!name[0]) {
+                textures[i] = NULL;
+                continue;
+            }
+
             strcpy(path, "textures/");
             strcat(path, name);
             FileStream stream(path, FileStream::MODE_READ);
@@ -36,7 +41,7 @@ struct Material {
             Texture::Desc desc;
             loadTGA(&stream, desc);
             desc.flags |= TEX_REPEAT | TEX_GEN_MIPS;
-            texture = ctx->createTexture(desc);
+            textures[i] = ctx->createTexture(desc);
 
             delete[] desc.data;
         }
@@ -54,14 +59,20 @@ struct Material {
     }
 
     ~Material() {
-        ctx->destroyTexture(texture);
+        for (int i = 0; i < sMAX; i++) {
+            ctx->destroyTexture(textures[i]);
+        }
         ctx->destroyShader(state->desc.shader);
         ctx->destroyState(state);
     }
 
     void bind() {
         ctx->setState(state);
-        ctx->setTexture(texture, sDiffuse);
+        for (int i = 0; i < sMAX; i++) {
+            if (textures[i]) {
+                ctx->setTexture(textures[i], ShaderSampler(i));
+            }
+        }
     }
 };
 
