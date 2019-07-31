@@ -105,7 +105,8 @@ struct Texture {
 
 #define SHADER_SAMPLERS(E) \
     E( sDiffuse  ) \
-    E( sNormal   )
+    E( sNormal   ) \
+    E( sEnvmap   )
 
 #define SHADER_UNIFORMS(E) \
     E( uViewProj   ) \

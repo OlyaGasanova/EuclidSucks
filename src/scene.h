@@ -13,6 +13,8 @@ struct Scene {
     int32  objectsCount;
     Entity **entities;
 
+    Texture *texEnvmap;
+
     int    start;
     int    sun;
 
@@ -45,9 +47,23 @@ struct Scene {
         }
 
         camera->pos = camera->pos + vec3(0.0f, 1.0f, 0.0f);
+
+    // test
+        {
+            FileStream stream("textures/envmap.dds", FileStream::MODE_READ);
+
+            Texture::Desc desc;
+            loadDDS(&stream, desc);
+            texEnvmap = ctx->createTexture(desc);
+
+            delete[] desc.data;
+        }
+    // ----
     }
 
     ~Scene() {
+        ctx->destroyTexture(texEnvmap);
+
         for (int i = 0; i < objectsCount; i++) {
             delete entities[i];
         }
@@ -92,6 +108,8 @@ struct Scene {
             }
 
             entity->material->bind();
+
+            ctx->setTexture(texEnvmap, sEnvmap);
 
             ctx->setUniform(uViewProj,   camera->mViewProj);
             ctx->setUniform(uModel,      entity->matrix);

@@ -4,9 +4,11 @@
 #include "utils.h"
 #include "context.h"
 
+#define MAX_MATERIAL_TEXTURES 2
+
 struct Material {
     State   *state;
-    Texture *textures[sMAX];
+    Texture *textures[MAX_MATERIAL_TEXTURES];
 
     Material(Stream *stream) {
         char name[256];
@@ -27,7 +29,7 @@ struct Material {
             delete[] desc.data;
         }
 
-        for (int i = 0; i < sMAX; i++) {
+        for (int i = 0; i < MAX_MATERIAL_TEXTURES; i++) {
             stream->readStr(name);
             if (!name[0]) {
                 textures[i] = NULL;
@@ -60,7 +62,7 @@ struct Material {
     }
 
     ~Material() {
-        for (int i = 0; i < sMAX; i++) {
+        for (int i = 0; i < MAX_MATERIAL_TEXTURES; i++) {
             ctx->destroyTexture(textures[i]);
         }
         ctx->destroyShader(state->desc.shader);
@@ -69,7 +71,7 @@ struct Material {
 
     void bind() {
         ctx->setState(state);
-        for (int i = 0; i < sMAX; i++) {
+        for (int i = 0; i < MAX_MATERIAL_TEXTURES; i++) {
             if (textures[i]) {
                 ctx->setTexture(textures[i], ShaderSampler(i));
             }

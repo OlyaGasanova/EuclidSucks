@@ -77,6 +77,7 @@ struct BufferGL : Buffer {
 
 struct TextureGL : Texture {
     GLuint id;
+    GLenum target;
 
     TextureGL(const Texture::Desc &desc) : Texture(desc) {
         const static struct FormatInfo {
@@ -109,25 +110,41 @@ struct TextureGL : Texture {
 
         ASSERT(COUNT(info) == Texture::FMT_MAX);
 
+        bool isCubemap = (desc.flags & FLAG_CUBEMAP);
+
+        if (isCubemap) {
+            target = GL_TEXTURE_CUBE_MAP;
+        } else {
+            target = GL_TEXTURE_2D;
+        }
+
         glGenTextures(1, &id);
-        glBindTexture(GL_TEXTURE_2D, id);
+        glBindTexture(target, id);
 
         uint8 *ptr = (uint8*)desc.data;
-        uint32 w = desc.width;
-        uint32 h = desc.height;
         FormatInfo fmt = info[desc.format];
 
-        for (int i = 0; i < desc.levels; i++) {
-            int size = w * h * fmt.bpp / 8;
-            if (desc.format >= FMT_BC1) {
-                size = max(size, int(4 * 4 * fmt.bpp / 8));
-                glCompressedTexImage2D(GL_TEXTURE_2D, i, fmt.iformat, w, h, 0, size, ptr);
-            } else {
-                glTexImage2D(GL_TEXTURE_2D, i, fmt.iformat, w, h, 0, fmt.format, fmt.type, ptr);
+        int numFaces = isCubemap ? 6 : 1;
+
+        for (int face = 0; face < numFaces; face++) {
+
+            GLenum faceTarget = isCubemap ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X + face) : target;
+            uint32 w = desc.width;
+            uint32 h = desc.height;
+
+            for (int level = 0; level < desc.levels; level++) {
+                int size = w * h * fmt.bpp / 8;
+                if (desc.format >= FMT_BC1) {
+                    size = max(size, int(4 * 4 * fmt.bpp / 8));
+                    glCompressedTexImage2D(faceTarget, level, fmt.iformat, w, h, 0, size, ptr);
+                } else {
+                    glTexImage2D(faceTarget, level, fmt.iformat, w, h, 0, fmt.format, fmt.type, ptr);
+                }
+                ptr += size;
+                w /= 2;
+                h /= 2;
             }
-            ptr += size;
-            w /= 2;
-            h /= 2;
+
         }
 
         bool genmips = (desc.flags & FLAG_GEN_MIPS);
@@ -139,18 +156,23 @@ struct TextureGL : Texture {
         GLint filter    = nearest ? GL_NEAREST : GL_LINEAR;
         GLint filterMip = mipmaps ? (nearest ? GL_NEAREST_MIPMAP_NEAREST : GL_LINEAR_MIPMAP_LINEAR) : filter;
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterMip);
+        glTexParameteri(target, GL_TEXTURE_WRAP_S, wrap);
+        glTexParameteri(target, GL_TEXTURE_WRAP_T, wrap);
+        glTexParameteri(target, GL_TEXTURE_MAG_FILTER, filter);
+        glTexParameteri(target, GL_TEXTURE_MIN_FILTER, filterMip);
 
         if (genmips) {
-            glGenerateMipmap(GL_TEXTURE_2D);
+            glGenerateMipmap(target);
         }
     }
 
     virtual ~TextureGL() {
         glDeleteTextures(1, &id);
+    }
+
+    void bind(ShaderSampler sampler) const {
+        glActiveTexture(GL_TEXTURE0 + sampler);
+        glBindTexture(target, id);
     }
 };
 
@@ -508,8 +530,7 @@ struct ContextGL : Context {
 
     virtual void setTexture(const Texture *texture, ShaderSampler sampler) override {
         const TextureGL *tex = (TextureGL*)texture;
-        glActiveTexture(GL_TEXTURE0 + sampler);
-        glBindTexture(GL_TEXTURE_2D, tex->id);
+        tex->bind(sampler);
     }
 
     virtual void setState(const State *state) override {
