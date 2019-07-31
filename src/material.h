@@ -36,11 +36,12 @@ struct Material {
 
             strcpy(path, "textures/");
             strcat(path, name);
+            strcat(path, ".dds");
             FileStream stream(path, FileStream::MODE_READ);
 
             Texture::Desc desc;
-            loadTGA(&stream, desc);
-            desc.flags |= TEX_REPEAT | TEX_GEN_MIPS;
+            loadDDS(&stream, desc);
+            desc.flags |= Texture::FLAG_REPEAT;
             textures[i] = ctx->createTexture(desc);
 
             delete[] desc.data;

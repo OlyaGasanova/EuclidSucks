@@ -1,3 +1,4 @@
+import os
 import bpy
 import struct
 import bmesh
@@ -35,7 +36,7 @@ def writeMaterial(file, material):
         texName = ''
         slot = material.texture_slots[i]
         if slot != None:
-            texName = bpy.path.basename(slot.texture.image.filepath)
+            texName = os.path.splitext(bpy.path.basename(slot.texture.image.filepath))[0]
         writeString(file, texName)
 
 def writeMesh(file, mesh):

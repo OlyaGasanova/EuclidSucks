@@ -29,6 +29,8 @@ extern bool   osClose;
 #define DEG2RAD (PI / 180.0f)
 #define RAD2DEG (180.0f / PI)
 
+#define COUNT(arr) (int(sizeof(arr) / sizeof(arr[0])))
+
 template <class T>
 inline void swap(T &a, T &b) {
     T tmp = a;
@@ -68,7 +70,7 @@ struct Color32 {
 
 #include "stream.h"
 
-#include "tga.h"
+#include "dds.h"
 
 // file system
 char* readFile(const char *name, uint32 &size) {

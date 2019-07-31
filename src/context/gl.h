@@ -17,6 +17,7 @@
 // Textures
     PFNGLACTIVETEXTUREPROC              glActiveTexture;
     PFNGLGENERATEMIPMAPPROC             glGenerateMipmap;
+    PFNGLCOMPRESSEDTEXIMAGE2DPROC       glCompressedTexImage2D;
 // Shader
     PFNGLCREATEPROGRAMPROC              glCreateProgram;
     PFNGLDELETEPROGRAMPROC              glDeleteProgram;
@@ -74,24 +75,65 @@ struct BufferGL : Buffer {
     }
 };
 
-
 struct TextureGL : Texture {
     GLuint id;
 
     TextureGL(const Texture::Desc &desc) : Texture(desc) {
-        uint8 *data = (uint8*)desc.data;
+        const static struct FormatInfo {
+            GLenum iformat, format, type, bpp;
+        } info[] = {
+            { GL_R8,                                       GL_RED,         GL_UNSIGNED_BYTE,                        8 }, // FMT_R8
+            { GL_RG8,                                      GL_RG,          GL_UNSIGNED_BYTE,                       16 }, // FMT_RG8
+            { GL_RGBA8,                                    GL_RGBA,        GL_UNSIGNED_BYTE,                       32 }, // FMT_RGBA8
+            { GL_SRGB8_ALPHA8_EXT,                         GL_RGBA,        GL_UNSIGNED_BYTE,                       32 }, // FMT_RGBA8_SRGB
+            { GL_R16F,                                     GL_RED,         GL_HALF_FLOAT,                          16 }, // FMT_R16F
+            { GL_RG16F,                                    GL_RG,          GL_HALF_FLOAT,                          32 }, // FMT_RG16F
+            { GL_RGBA16F,                                  GL_RGBA,        GL_HALF_FLOAT,                          64 }, // FMT_RGBA16F
+            { GL_R32F,                                     GL_RED,         GL_FLOAT,                               32 }, // FMT_R32F
+            { GL_RG32F,                                    GL_RG,          GL_FLOAT,                               64 }, // FMT_RG32F
+            { GL_RGB32F,                                   GL_RGB,         GL_FLOAT,                               96 }, // FMT_RGB32F
+            { GL_RGBA32F,                                  GL_RGBA,        GL_FLOAT,                              128 }, // FMT_RGBA32F
+            { GL_R11F_G11F_B10F_EXT,                       GL_RGB,         GL_UNSIGNED_INT_10F_11F_11F_REV_EXT,    32 }, // FMT_R11G11B10
+            { GL_COMPRESSED_RGB_S3TC_DXT1_EXT,             0,              0,                                       4 }, // FMT_BC1
+            { GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT,      0,              0,                                       4 }, // FMT_BC1_SRGB
+            { GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,            0,              0,                                       8 }, // FMT_BC2
+            { GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT,      0,              0,                                       8 }, // FMT_BC2_SRGB
+            { GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,            0,              0,                                       8 }, // FMT_BC3
+            { GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT,      0,              0,                                       8 }, // FMT_BC3_SRGB
+            { GL_COMPRESSED_RED_RGTC1,                     0,              0,                                       4 }, // FMT_BC4
+            { GL_COMPRESSED_RG_RGTC2,                      0,              0,                                       8 }, // FMT_BC5
+            { GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT,       0,              0,                                       8 }, // FMT_BC6
+            { GL_COMPRESSED_RGBA_BPTC_UNORM,               0,              0,                                       8 }, // FMT_BC7
+            { GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM,         0,              0,                                       8 }, // FMT_BC7_SRGB
+        };
+
+        ASSERT(COUNT(info) == Texture::FMT_MAX);
 
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D, id);
+
+        uint8 *ptr = (uint8*)desc.data;
+        uint32 w = desc.width;
+        uint32 h = desc.height;
+        FormatInfo fmt = info[desc.format];
+
         for (int i = 0; i < desc.levels; i++) {
-            glTexImage2D(GL_TEXTURE_2D, i, GL_RGBA8, desc.width >> i, desc.height >> i, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-            data += (desc.width >> i) * (desc.height >> 1) * 4;
+            int size = w * h * fmt.bpp / 8;
+            if (desc.format >= FMT_BC1) {
+                size = max(size, int(4 * 4 * fmt.bpp / 8));
+                glCompressedTexImage2D(GL_TEXTURE_2D, i, fmt.iformat, w, h, 0, size, ptr);
+            } else {
+                glTexImage2D(GL_TEXTURE_2D, i, fmt.iformat, w, h, 0, fmt.format, fmt.type, ptr);
+            }
+            ptr += size;
+            w /= 2;
+            h /= 2;
         }
 
-        bool genmips = (desc.flags & TEX_GEN_MIPS);
+        bool genmips = (desc.flags & FLAG_GEN_MIPS);
         bool mipmaps = (desc.levels > 1) || genmips;
-        bool nearest = (desc.flags & TEX_NEAREST);
-        bool repeat  = (desc.flags & TEX_REPEAT);
+        bool nearest = (desc.flags & FLAG_NEAREST);
+        bool repeat  = (desc.flags & FLAG_REPEAT);
 
         GLint wrap      = repeat  ? GL_REPEAT : GL_CLAMP_TO_EDGE;
         GLint filter    = nearest ? GL_NEAREST : GL_LINEAR;
@@ -364,6 +406,7 @@ struct ContextGL : Context {
     // Textures
         GetProcOGL( glActiveTexture );
         GetProcOGL( glGenerateMipmap );
+        GetProcOGL( glCompressedTexImage2D );
     // Shader
         GetProcOGL( glCreateProgram );
         GetProcOGL( glDeleteProgram );

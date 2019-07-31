@@ -39,24 +39,40 @@ struct Buffer  {
     virtual ~Buffer() {}
 };
 
-
-enum TextureFlags {
-    TEX_REPEAT   = (1 << 0),
-    TEX_NEAREST  = (1 << 1),
-    TEX_GEN_MIPS = (1 << 2),
-    TEX_CUBEMAP  = (1 << 3),
-};
-
 struct Texture {
 
+    enum TextureFlags {
+        FLAG_REPEAT   = (1 << 0),
+        FLAG_NEAREST  = (1 << 1),
+        FLAG_GEN_MIPS = (1 << 2),
+        FLAG_CUBEMAP  = (1 << 3),
+    };
+
     enum Format {
-        R8,
-        RG8,
-        RGBA8,
-        R16F,
-        RG16F,
-        RGBA16F,
-        D24S8,
+        FMT_R8,
+        FMT_RG8,
+        FMT_RGBA8,
+        FMT_RGBA8_SRGB,
+        FMT_R16F,
+        FMT_RG16F,
+        FMT_RGBA16F,
+        FMT_R32F,
+        FMT_RG32F,
+        FMT_RGB32F,
+        FMT_RGBA32F,
+        FMT_R11G11B10F,
+        FMT_BC1,
+        FMT_BC1_SRGB,
+        FMT_BC2,
+        FMT_BC2_SRGB,
+        FMT_BC3,
+        FMT_BC3_SRGB,
+        FMT_BC4,
+        FMT_BC5,
+        FMT_BC6,
+        FMT_BC7,
+        FMT_BC7_SRGB,
+        FMT_MAX,
     };
 
     struct Desc {
