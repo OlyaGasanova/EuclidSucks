@@ -12,6 +12,7 @@ struct Scene {
     Entity **entities;
 
     Texture *texEnvmap;
+    Texture *texLUT;
 
     float  time;
 
@@ -23,6 +24,8 @@ struct Scene {
             stream->readStr(buf);
             texEnvmap = resourceManager->getTexture(buf);
         }
+
+        texLUT = resourceManager->getTexture("lut");
 
         stream->read(&entitiesCount, sizeof(entitiesCount));
         entities = new Entity*[entitiesCount];
@@ -54,6 +57,7 @@ struct Scene {
 
     ~Scene() {
         resourceManager->releaseTexture(texEnvmap);
+        resourceManager->releaseTexture(texLUT);
 
         for (int i = 0; i < entitiesCount; i++) {
             delete entities[i];
@@ -90,6 +94,7 @@ struct Scene {
         renderer->viewPos = vec4(camera->pos.x, camera->pos.y, camera->pos.z, 0);
 
         ctx->setTexture(texEnvmap, sEnvmap);
+        ctx->setTexture(texLUT,    sLUT);
     // ----
         
         for (int i = 0; i < entitiesCount; i++) {

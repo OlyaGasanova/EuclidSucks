@@ -110,7 +110,8 @@ struct Texture : ContextResource {
 #define SHADER_SAMPLERS(E) \
     E( sDiffuse  ) \
     E( sNormal   ) \
-    E( sEnvmap   )
+    E( sEnvmap   ) \
+    E( sLUT      )
 
 #define SHADER_UNIFORMS(E) \
     E( uViewProj   ) \

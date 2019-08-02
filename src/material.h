@@ -35,7 +35,7 @@ struct Material {
                 continue;
             }
 
-            textures[i] = resourceManager->getTexture(name);
+            textures[i] = resourceManager->getTexture(name, Texture::FLAG_REPEAT);
         }
 
         stream->read(&params, sizeof(params));

@@ -40,7 +40,7 @@ struct ResourceManager {
         //
     }
 
-    Texture* getTexture(const char *name) {
+    Texture* getTexture(const char *name, uint32 flags = 0) {
         char path[256];
         strcpy(path, "textures/");
         strcat(path, name);
@@ -50,9 +50,7 @@ struct ResourceManager {
 
         Texture::Desc desc;
         loadDDS(&stream, desc);
-        if (!(desc.flags & Texture::FLAG_CUBEMAP)) {
-            desc.flags |= Texture::FLAG_REPEAT;
-        }
+        desc.flags |= flags;
         Texture *texture = ctx->createTexture(desc);
         delete[] desc.data;
 
