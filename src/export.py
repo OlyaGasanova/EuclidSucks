@@ -1,3 +1,4 @@
+import os
 import bpy
 import struct
 import bmesh
@@ -29,14 +30,24 @@ def writeString(file, str):
 
 def writeMaterial(file, material):
     # write shader file name
-    writeString(file, "base.glsl")
+    writeString(file, material.name.split('.')[0])
     # write texture file names
-    for i in range(2): # diffuse, normal, specular
+    for i in range(3): # diffuse, normal, pbr
         texName = ''
         slot = material.texture_slots[i]
         if slot != None:
-            texName = bpy.path.basename(slot.texture.image.filepath)
+            texName = os.path.splitext(bpy.path.basename(slot.texture.image.filepath))[0]
         writeString(file, texName)
+    # get shader input params
+    inputs = material.node_tree.nodes[1].inputs;
+    color     = list(inputs['Base Color'].default_value)
+    metallic  = inputs['Metallic'].default_value
+    roughness = inputs['Roughness'].default_value
+    # write params
+    file.write(struct.pack('ffff', color[0], color[1], color[2], color[3]))
+    file.write(struct.pack('f', metallic))
+    file.write(struct.pack('f', roughness))
+    file.write(struct.pack('ff', 0.0, 0.0)) # reserved
 
 def writeMesh(file, mesh):
     # triangulate the mesh first
@@ -113,6 +124,9 @@ def export(path):
     
     file = open(path, 'wb')
     
+    # write environment map name
+    writeString(file, os.path.splitext(bpy.data.worlds[0].node_tree.nodes[2].image.name)[0])
+    
     # write objects count
     file.write(struct.pack('i', len(objects)))
     
@@ -131,4 +145,4 @@ def export(path):
     
     print('done')
     
-export('C:/Projects/EuclidSucks/bin/scenes/scene1.scn')
+export('C:/Projects/EuclidSucks/bin/scenes/test_pbr.scn')

@@ -2,85 +2,102 @@
 #define H_ENTITY
 
 #include "utils.h"
-#include "context.h"
 #include "material.h"
+#include "renderable.h"
 
 struct Entity {
 
-    enum {
-        TYPE_MESH,
+    enum Type {
+        TYPE_MODEL,
         TYPE_SUN,
         TYPE_START,
     };
 
-    int32    type;
-    mat4     matrix;
-    Mesh     *mesh;
-    Material *material;
+    Type       type;
+    mat4       matrix;
+    Renderable *renderable;
 
-    Entity(Stream *stream) : mesh(NULL), material(NULL) {
-        stream->read(&type, sizeof(type));
+    Entity(Stream *stream, Type type) : type(type), renderable(NULL) {
         stream->read(&matrix, sizeof(matrix));
+    }
 
-        if (type == TYPE_MESH) {
-            // read material
-            material = new Material(stream);
+    virtual ~Entity() {
+        delete renderable;
+    }
 
-            Buffer *iBuffer;
-            Buffer *vBuffer;
+    virtual void update() {};
+};
 
-            { // read indices
-                int32 count;
-                stream->read(&count, sizeof(count));
-                Index *indices = new Index[count];
-                stream->read(indices, count * sizeof(Index));
 
-                Buffer::Desc desc;
-                desc.flags  = BUF_INDEX;
-                desc.count  = count;
-                desc.stride = sizeof(Index);
-                desc.data   = indices;
+struct Model : Entity {
+    
+    Model(Stream *stream) : Entity(stream, TYPE_MODEL) {
+        renderable = new Renderable();
 
-                iBuffer = ctx->createBuffer(desc);
+        // read material
+        renderable->material = new Material(stream);
 
-                delete[] indices;
-            }
+        Buffer *iBuffer;
+        Buffer *vBuffer;
 
-            { // read vertices
-                int32 count;
-                stream->read(&count, sizeof(count));
-                Vertex *vertices = new Vertex[count];
-                stream->read(vertices, count * sizeof(Vertex));
+        { // read indices
+            int32 count;
+            stream->read(&count, sizeof(count));
+            Index *indices = new Index[count];
+            stream->read(indices, count * sizeof(Index));
 
-                Buffer::Desc desc;
-                desc.flags  = BUF_VERTEX;
-                desc.count  = count;
-                desc.stride = sizeof(Vertex);
-                desc.data   = vertices;
+            Buffer::Desc desc;
+            desc.flags  = BUF_INDEX;
+            desc.count  = count;
+            desc.stride = sizeof(Index);
+            desc.data   = indices;
 
-                vBuffer = ctx->createBuffer(desc);
+            iBuffer = ctx->createBuffer(desc);
 
-                delete[] vertices;
-            }
+            delete[] indices;
+        }
 
-            { // create mesh
-                Mesh::Desc desc;
-                desc.iBuffer = iBuffer;
-                desc.vBuffer = vBuffer;
-                desc.vStart  = 0;
+        { // read vertices
+            int32 count;
+            stream->read(&count, sizeof(count));
+            Vertex *vertices = new Vertex[count];
+            stream->read(vertices, count * sizeof(Vertex));
 
-                mesh = ctx->createMesh(desc);
-            }
+            Buffer::Desc desc;
+            desc.flags  = BUF_VERTEX;
+            desc.count  = count;
+            desc.stride = sizeof(Vertex);
+            desc.data   = vertices;
+
+            vBuffer = ctx->createBuffer(desc);
+
+            delete[] vertices;
+        }
+
+        { // create mesh
+            Mesh::Desc desc;
+            desc.iBuffer = iBuffer;
+            desc.vBuffer = vBuffer;
+            desc.vStart  = 0;
+
+            renderable->mesh = ctx->createMesh(desc);
         }
     }
 
-    ~Entity() {
-        if (mesh) {
-            ctx->destroyBuffer(mesh->desc.iBuffer);
-            ctx->destroyBuffer(mesh->desc.vBuffer);
-            ctx->destroyMesh(mesh);
-        }
-        delete material;
+    virtual void update() override {
+        renderable->matrix = matrix;
+    }
+};
+
+
+struct Sun : Entity {
+
+    Sun(Stream *stream) : Entity(stream, TYPE_SUN) {
+
+    }
+
+    virtual void update() override {
+        // TODO rotate sun
     }
 };
 

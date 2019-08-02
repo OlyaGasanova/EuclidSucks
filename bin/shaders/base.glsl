@@ -68,7 +68,7 @@ void main() {
 
     light = light * 0.8 + 0.2; // apply ambient
 
-    fragColor = vec4(n.xyz, 1.0);// vec4(d.xyz * light * vColor.xyz + specular, vColor.w);
+    fragColor = vec4(d.xyz * light * vColor.xyz + specular, vColor.w);
 }
 
 #endif

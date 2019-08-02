@@ -126,7 +126,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             Input::reset();
             break;
         case WM_SIZE :
-            ctx->resize(LOWORD(lParam), HIWORD(lParam));
+            renderer->resize(LOWORD(lParam), HIWORD(lParam));
             break;
         case WM_DESTROY:
             PostQuitMessage(0);
