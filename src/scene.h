@@ -5,66 +5,57 @@
 #include "context.h"
 #include "entity.h"
 
-#define MAX_LIGHTS 3
-
 struct Scene {
     Camera *camera;
 
-    int32  objectsCount;
+    int32  entitiesCount;
     Entity **entities;
 
     Texture *texEnvmap;
 
-    int    start;
-    int    sun;
-
     float  time;
 
-    Scene(Stream *stream) : start(-1), sun(-1), time(0.0f) {
-        camera = new Camera(vec3(0.0f), vec3(0.0f));
+    Scene(Stream *stream) : time(0.0f) {
+        camera = new Camera(vec3(-11, 9, 0), vec3(0, -PI * 0.5f, 0));
 
-        stream->read(&objectsCount, sizeof(objectsCount));
-        entities = new Entity*[objectsCount];
+        {
+            char buf[256];
+            stream->readStr(buf);
+            texEnvmap = resourceManager->getTexture(buf);
+        }
 
-        for (int i = 0; i < objectsCount; i++) {
-            entities[i] = new Entity(stream);
-            
-            switch (entities[i]->type) {
-                case Entity::TYPE_MESH :
+        stream->read(&entitiesCount, sizeof(entitiesCount));
+        entities = new Entity*[entitiesCount];
+
+        for (int i = 0; i < entitiesCount; i++) {
+            uint32 type;
+            stream->read(&type, sizeof(type));
+
+            switch (type) {
+                case Entity::TYPE_MODEL :
+                    entities[i] = new Model(stream);
                     break;
                 case Entity::TYPE_SUN :
-                    sun = i;
+                    entities[i] = new Sun(stream);
                     break;
                 case Entity::TYPE_START :
-                    start = i;
+                    entities[i] = new Entity(stream, Entity::Type(type));
                     break;
                 default : ASSERT(false);
             }
         }
 
-        if (start >= 0) {
-            camera->pos = entities[start]->matrix.getPos();
-        }
+        //if (start >= 0) {
+        //    camera->pos = entities[start]->matrix.getPos();
+        //}
 
         camera->pos = camera->pos + vec3(0.0f, 1.0f, 0.0f);
-
-    // test
-        {
-            FileStream stream("textures/envmap.dds", FileStream::MODE_READ);
-
-            Texture::Desc desc;
-            loadDDS(&stream, desc);
-            texEnvmap = ctx->createTexture(desc);
-
-            delete[] desc.data;
-        }
-    // ----
     }
 
     ~Scene() {
-        ctx->destroyTexture(texEnvmap);
+        resourceManager->releaseTexture(texEnvmap);
 
-        for (int i = 0; i < objectsCount; i++) {
+        for (int i = 0; i < entitiesCount; i++) {
             delete entities[i];
         }
         delete[] entities;
@@ -75,49 +66,40 @@ struct Scene {
     void update() {
         camera->control();
         time += osDeltaTime;
+
+        for (int i = 0; i < entitiesCount; i++) {
+            entities[i]->update();
+        }
     }
 
     void render() {
-        camera->aspect = (float)ctx->width / (float)ctx->height;
-        camera->update();
+        camera->aspect = (float)renderer->width / (float)renderer->height;
+        camera->refresh();
+
+        renderer->mViewProj = camera->mViewProj;
 
     // test
-        vec4 lightColor[MAX_LIGHTS] = {
-             vec4(1.0f, 0.2f, 0.2f, 0.0f),
-             vec4(1.0f, 1.0f, 1.0f, 0.0f),
-             vec4(0.2f, 0.2f, 1.0f, 0.0f)
-        };
+        renderer->lightColor[0] = vec4(1.0f, 0.2f, 0.2f, 0.0f);
+        renderer->lightColor[1] = vec4(1.0f, 1.0f, 1.0f, 0.0f);
+        renderer->lightColor[2] = vec4(0.2f, 0.2f, 1.0f, 0.0f);
 
-        vec4 lightPos[MAX_LIGHTS] = {
-            vec4(-8, 2, 0, 1.0f / 8.0f),
-            vec4( 0, 2, 0, 1.0f / 16.0f),
-            vec4(+8, 2, 0, 1.0f / 8.0f)
-        };
+        renderer->lightPos[0] = vec4(-8, 2, 0, 1.0f / 8.0f);
+        renderer->lightPos[1] = vec4(cosf(time) * 4.0f, 2, sinf(time) * 4.0f, 1.0f / 16.0f);
+        renderer->lightPos[2] = vec4(+8, 2, 0, 1.0f / 8.0f);
 
-        lightPos[1].x += cosf(time) * 4.0f;
-        lightPos[1].z += sinf(time) * 4.0f;
+        renderer->viewPos = vec4(camera->pos.x, camera->pos.y, camera->pos.z, 0);
+
+        ctx->setTexture(texEnvmap, sEnvmap);
     // ----
-
-        vec4 viewPos(camera->pos.x, camera->pos.y, camera->pos.z, 0);
         
-        for (int i = 0; i < objectsCount; i++) {
+        for (int i = 0; i < entitiesCount; i++) {
             Entity *entity = entities[i];
 
-            if (entity->type != Entity::TYPE_MESH) {
+            if (!entity->renderable) {
                 continue;
             }
 
-            entity->material->bind();
-
-            ctx->setTexture(texEnvmap, sEnvmap);
-
-            ctx->setUniform(uViewProj,   camera->mViewProj);
-            ctx->setUniform(uModel,      entity->matrix);
-            ctx->setUniform(uViewPos,    viewPos);
-            ctx->setUniform(uLightPos,   lightPos[0],   MAX_LIGHTS);
-            ctx->setUniform(uLightColor, lightColor[0], MAX_LIGHTS);
-
-            ctx->draw(entities[i]->mesh);
+            renderer->render(entity->renderable);
         }
     }
 };

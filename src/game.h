@@ -2,7 +2,7 @@
 #define H_GAME
 
 #include "input.h"
-#include "context.h"
+#include "renderer.h"
 #include "utils.h"
 #include "camera.h"
 #include "scene.h"
@@ -17,20 +17,19 @@ namespace Game {
     Scene   *scene;
 
     void init() {
-        ctx = createContext(GAPI_GL);
+        renderer = new Renderer(GAPI_GL);
 
         lastTime = osGetTimeMS();
         fpsTime = lastTime;
         frame = 0;
 
-        FileStream stream("scenes/scene1.scn", FileStream::MODE_READ);
+        FileStream stream("scenes/test_pbr.scn", FileStream::MODE_READ);
         scene = new Scene(&stream);
     }
 
     void deinit() {
         delete scene;
-
-        destroyContext(ctx);
+        delete renderer;
     }
 
     void updateStep() {
@@ -57,13 +56,11 @@ namespace Game {
     }
 
     void render() {
-        ctx->resetState();
-        ctx->setViewport(0, 0, ctx->width, ctx->height);
-        ctx->clear(CLEAR_MASK_ALL, vec4(0.4f, 0.7f, 1.0f, 1.0));
+        renderer->begin();
 
         scene->render();
 
-        ctx->present();
+        renderer->end();
 
     // fps counter
         frame++;

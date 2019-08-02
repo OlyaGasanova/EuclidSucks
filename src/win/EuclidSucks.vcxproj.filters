@@ -34,6 +34,9 @@
     <ClInclude Include="..\material.h" />
     <ClInclude Include="..\entity.h" />
     <ClInclude Include="..\dds.h" />
+    <ClInclude Include="..\renderer.h" />
+    <ClInclude Include="..\resource_manager.h" />
+    <ClInclude Include="..\renderable.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

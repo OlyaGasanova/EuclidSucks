@@ -2,32 +2,31 @@
 #define H_MATERIAL
 
 #include "utils.h"
-#include "context.h"
+#include "resource_manager.h"
 
-#define MAX_MATERIAL_TEXTURES 2
+#define MAX_MATERIAL_TEXTURES 3
 
 struct Material {
-    State   *state;
-    Texture *textures[MAX_MATERIAL_TEXTURES];
+
+    struct Params {
+        vec4  color;
+        float metallic;
+        float roughness;
+        float reserved0;
+        float reserved1;
+    };
+
+    Params      params;
+    RenderState *state;
+    Texture     *textures[MAX_MATERIAL_TEXTURES];
 
     Material(Stream *stream) {
         char name[256];
-        char path[256];
 
         Shader *shader;
 
-        {
-            stream->readStr(name);
-            strcpy(path, "shaders/");
-            strcat(path, name);
-
-            Shader::Desc desc;
-            desc.data = readFile(path, desc.size);
-
-            shader = ctx->createShader(desc);
-
-            delete[] desc.data;
-        }
+        stream->readStr(name);
+        shader = resourceManager->getShader(name);
 
         for (int i = 0; i < MAX_MATERIAL_TEXTURES; i++) {
             stream->readStr(name);
@@ -36,46 +35,30 @@ struct Material {
                 continue;
             }
 
-            strcpy(path, "textures/");
-            strcat(path, name);
-            strcat(path, ".dds");
-            FileStream stream(path, FileStream::MODE_READ);
-
-            Texture::Desc desc;
-            loadDDS(&stream, desc);
-            desc.flags |= Texture::FLAG_REPEAT;
-            textures[i] = ctx->createTexture(desc);
-
-            delete[] desc.data;
+            textures[i] = resourceManager->getTexture(name);
         }
 
+        stream->read(&params, sizeof(params));
+
         {
-            State::Desc desc;
+            RenderState::Desc desc;
             desc.colorMask  = COLOR_MASK_ALL;
             desc.depthTest  = true;
             desc.depthWrite = true;
             desc.cullFace   = FACE_BACK;
+            //desc.pass       = renderer->getRenderPass(Renderer::PASS_DEFAULT);
             desc.shader     = shader;
 
-            state = ctx->createState(desc);
+            state = resourceManager->getRenderState(desc);
         }
     }
 
     ~Material() {
         for (int i = 0; i < MAX_MATERIAL_TEXTURES; i++) {
-            ctx->destroyTexture(textures[i]);
+            resourceManager->releaseTexture(textures[i]);
         }
-        ctx->destroyShader(state->desc.shader);
-        ctx->destroyState(state);
-    }
-
-    void bind() {
-        ctx->setState(state);
-        for (int i = 0; i < MAX_MATERIAL_TEXTURES; i++) {
-            if (textures[i]) {
-                ctx->setTexture(textures[i], ShaderSampler(i));
-            }
-        }
+        resourceManager->releaseShader(state->desc.shader);
+        resourceManager->releaseRenderState(state);
     }
 };
 

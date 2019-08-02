@@ -33,7 +33,6 @@ void main() {
 
 uniform sampler2D sDiffuse; // rgb - albedo, a - ambient occlusion
 uniform sampler2D sNormal;  // rgb - normal, a - roughness
-uniform samplerCube sEnvmap;
 
 uniform vec4 uViewPos;
 uniform vec4 uLightPos[MAX_LIGHTS];   // xyz - pos, w - 1/radius
@@ -68,8 +67,6 @@ void main() {
     }
 
     light = light * 0.8 + 0.2; // apply ambient
-
-    light += textureCube(sEnvmap, rv).xyz * (1.0 - n.w);
 
     fragColor = vec4(d.xyz * light * vColor.xyz + specular, vColor.w);
 }

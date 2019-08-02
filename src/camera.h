@@ -19,7 +19,7 @@ struct Camera {
         mView.identity();
     }
 
-    void update() {
+    void refresh() {
         mProj = mat4::perspective(fov, aspect, znear, zfar);
         
         mView.identity();

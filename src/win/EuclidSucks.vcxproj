@@ -179,12 +179,15 @@
     <ClInclude Include="..\entity.h" />
     <ClInclude Include="..\game.h" />
     <ClInclude Include="..\input.h" />
+    <ClInclude Include="..\renderable.h" />
+    <ClInclude Include="..\resource_manager.h" />
     <ClInclude Include="..\material.h" />
     <ClInclude Include="..\math\mat4.h" />
     <ClInclude Include="..\math\vec2.h" />
     <ClInclude Include="..\math\vec3.h" />
     <ClInclude Include="..\math\vec4.h" />
     <ClInclude Include="..\dds.h" />
+    <ClInclude Include="..\renderer.h" />
     <ClInclude Include="..\scene.h" />
     <ClInclude Include="..\stream.h" />
     <ClInclude Include="..\utils.h" />

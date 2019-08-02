@@ -42,6 +42,17 @@
     PFNGLDISABLEVERTEXATTRIBARRAYPROC   glDisableVertexAttribArray;
     PFNGLVERTEXATTRIBPOINTERPROC        glVertexAttribPointer;
     PFNGLGETPROGRAMIVPROC               glGetProgramiv;
+// Frame Buffers
+    PFNGLGENFRAMEBUFFERSPROC            glGenFramebuffers;
+    PFNGLBINDFRAMEBUFFERPROC            glBindFramebuffer;
+    PFNGLGENRENDERBUFFERSPROC           glGenRenderbuffers;
+    PFNGLBINDRENDERBUFFERPROC           glBindRenderbuffer;
+    PFNGLFRAMEBUFFERTEXTURE2DPROC       glFramebufferTexture2D;
+    PFNGLFRAMEBUFFERRENDERBUFFERPROC    glFramebufferRenderbuffer;
+    PFNGLRENDERBUFFERSTORAGEPROC        glRenderbufferStorage;
+    PFNGLCHECKFRAMEBUFFERSTATUSPROC     glCheckFramebufferStatus;
+    PFNGLDELETEFRAMEBUFFERSPROC         glDeleteFramebuffers;
+    PFNGLDELETERENDERBUFFERSPROC        glDeleteRenderbuffers;
 // Common
     PFNGLSTENCILFUNCSEPARATEPROC        glStencilFuncSeparate;
     PFNGLSTENCILMASKSEPARATEPROC        glStencilMaskSeparate;
@@ -83,6 +94,7 @@ struct TextureGL : Texture {
         const static struct FormatInfo {
             GLenum iformat, format, type, bpp;
         } info[] = {
+            { 0,                                           0,              0,                                       1 }, // FMT_UNKNOWN
             { GL_R8,                                       GL_RED,         GL_UNSIGNED_BYTE,                        8 }, // FMT_R8
             { GL_RG8,                                      GL_RG,          GL_UNSIGNED_BYTE,                       16 }, // FMT_RG8
             { GL_RGBA8,                                    GL_RGBA,        GL_UNSIGNED_BYTE,                       32 }, // FMT_RGBA8
@@ -109,6 +121,7 @@ struct TextureGL : Texture {
         };
 
         ASSERT(COUNT(info) == Texture::FMT_MAX);
+        ASSERT(desc.format != Texture::FMT_UNKNOWN);
 
         bool isCubemap = (desc.flags & FLAG_CUBEMAP);
 
@@ -186,8 +199,19 @@ struct ShaderGL : Shader {
         static const char *ShaderSamplerName[sMAX] = { SHADER_SAMPLERS(DECL_STR) };
         static const char *ShaderUniformName[uMAX] = { SHADER_UNIFORMS(DECL_STR) };
 
-        const char *VS_DEFINES = "#version 110\n" "#define VS\n";
-        const char *FS_DEFINES = "#version 110\n" "#define FS\n" "#define fragColor gl_FragColor\n";
+        const char *VS_DEFINES = "#version 130\n"
+                                 "#define VS\n"
+                                 "#define varying   out\n"
+                                 "#define attribute in\n"
+                                 "#define texture2D texture\n";
+
+        const char *FS_DEFINES = "#version 130\n"
+                                 "#define FS\n"
+                                 "#define varying     in\n"
+                                 "#define texture2D   texture\n"
+                                 "#define texture3D   texture\n"
+                                 "#define textureCube texture\n"
+                                 "out vec4 fragColor;\n";
 
         char *source = new char[desc.size + 1];
         memcpy(source, desc.data, desc.size);
@@ -255,6 +279,10 @@ struct ShaderGL : Shader {
     virtual ~ShaderGL() {
         glDeleteProgram(id);
     }
+
+    void bind() {
+        glUseProgram(id);
+    }
 };
 
 
@@ -288,6 +316,29 @@ struct MeshGL : Mesh {
 
     virtual ~MeshGL() {
         glDeleteVertexArrays(1, &id);
+    }
+};
+
+
+struct FrameBufferGL : FrameBuffer {
+    GLuint id;
+
+    FrameBufferGL(const FrameBuffer::Desc &desc) : FrameBuffer(desc) {
+        glGenFramebuffers(1, &id);
+    }
+
+    virtual ~FrameBufferGL() {
+        glDeleteFramebuffers(1, &id);
+    }
+
+    void bind() {
+        if (!this) {
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            return;
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, id);
+        // TODO
     }
 };
 
@@ -328,10 +379,10 @@ static const GLenum COMPARE_FUNC[] = {
     GL_GEQUAL,
 };
 
-struct StateGL : State {
-    StateGL(const State::Desc &desc) : State(desc) {}
+struct RenderStateGL : RenderState {
+    RenderStateGL(const RenderState::Desc &desc) : RenderState(desc) {}
 
-    void bind(const State *curState, uint8 stencilRef) {
+    void bind(const RenderState *curState, uint8 stencilRef) {
         #define DIFF(param) (!curState || desc.##param != curState->desc.##param)
 
         if DIFF(colorMask) {
@@ -364,7 +415,7 @@ struct StateGL : State {
 
         if (desc.stencilTest) {
             for (int i = 0; i < FACE_MAX; i++) {
-                const State::Desc::Stencil &f = desc.stencil[i];
+                const RenderState::Desc::Stencil &f = desc.stencil[i];
 
                 GLenum face = (i == FACE_BACK) ? GL_BACK : GL_FRONT;
 
@@ -394,15 +445,16 @@ struct StateGL : State {
         }
 
         if (desc.shader && DIFF(shader)) {
-            glUseProgram(((ShaderGL*)desc.shader)->id);
+            ShaderGL *obj = (ShaderGL*)desc.shader;
+            obj->bind();
         }
 
         #undef DIFF
     }
 
     void setStencilRef(uint8 stencilRef) {
-        const State::Desc::Stencil &f = desc.stencil[FACE_FRONT];
-        const State::Desc::Stencil &b = desc.stencil[FACE_BACK];
+        const RenderState::Desc::Stencil &f = desc.stencil[FACE_FRONT];
+        const RenderState::Desc::Stencil &b = desc.stencil[FACE_BACK];
 
         glStencilFuncSeparate(GL_FRONT, COMPARE_FUNC[f.compare], stencilRef, f.readMask);
         glStencilFuncSeparate(GL_BACK,  COMPARE_FUNC[b.compare], stencilRef, b.readMask);
@@ -411,12 +463,11 @@ struct StateGL : State {
 
 
 struct ContextGL : Context {
-    const State *curState;
-    State *defState;
+    RenderState *defRenderState;
 
     uint8 stencilRef;
 
-    ContextGL() : Context(), curState(NULL), stencilRef(0xFF) {
+    ContextGL() : Context(), stencilRef(0xFF) {
     // Buffers
         GetProcOGL( glGenBuffers );
         GetProcOGL( glDeleteBuffers );
@@ -459,18 +510,22 @@ struct ContextGL : Context {
         GetProcOGL( glStencilOpSeparate );
         GetProcOGL( glBlendFuncSeparate );
 
-    // init default render state
-        State::Desc desc;
-        desc.colorMask  = COLOR_MASK_ALL;
-        desc.depthTest  = true;
-        desc.depthWrite = true;
-        desc.cullFace   = FACE_BACK;
+        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);  
 
-        defState = createState(desc);
+        {
+        // init default render state
+            RenderState::Desc desc;
+            desc.colorMask  = COLOR_MASK_ALL;
+            desc.depthTest  = true;
+            desc.depthWrite = true;
+            desc.cullFace   = FACE_BACK;
+
+            defRenderState = createRenderState(desc);
+        }
     }
 
     virtual ~ContextGL() {
-        destroyState(defState);
+        destroyResource(defRenderState);
     }
 
     virtual void present() override {
@@ -494,12 +549,16 @@ struct ContextGL : Context {
         return new MeshGL(desc);
     }
 
-    virtual State* createState(const State::Desc &desc) override {
-        return new StateGL(desc);
+    virtual RenderState* createRenderState(const RenderState::Desc &desc) override {
+        return new RenderStateGL(desc);
     }
 
-    virtual void resetState() override {
-        setState(defState);
+    virtual FrameBuffer* createFrameBuffer(const FrameBuffer::Desc &desc) override {
+        return new FrameBufferGL(desc);
+    }
+
+    virtual void resetRenderState() override {
+        setRenderState(defRenderState);
     }
 
     virtual void clear(int clearMask, const vec4 &color, float depth, int stencil) override {
@@ -528,19 +587,15 @@ struct ContextGL : Context {
         glViewport(x, y, width, height);
     }
 
-    virtual void setTexture(const Texture *texture, ShaderSampler sampler) override {
-        const TextureGL *tex = (TextureGL*)texture;
-        tex->bind(sampler);
-    }
-
-    virtual void setState(const State *state) override {
-        if (state == curState) {
+    virtual void setRenderState(const RenderState *state) override {
+        if (state == curRenderState) {
             return;
         }
 
-        ((StateGL*)state)->bind(curState, stencilRef);
+        RenderStateGL *obj = (RenderStateGL*)state;
+        obj->bind(curRenderState, stencilRef);
 
-        curState = state;
+        Context::setRenderState(state);
     }
 
     virtual void setStencilRef(uint8 ref) override {
@@ -552,27 +607,38 @@ struct ContextGL : Context {
         setStencilRef(stencilRef);
     }
 
+    virtual void beginPass(const FrameBuffer *fb) override {
+        Context::beginPass(fb);
+        FrameBufferGL *obj = (FrameBufferGL*)fb;
+        obj->bind();
+    }
+
+    virtual void setTexture(const Texture *texture, ShaderSampler sampler) override {
+        const TextureGL *obj = (TextureGL*)texture;
+        obj->bind(sampler);
+    }
+
     virtual void setUniform(ShaderUniform uniform, const vec4 &value, int count = 1) override {
-        ASSERT(curState && curState->desc.shader);
-        GLint uid = ((ShaderGL*)curState->desc.shader)->uid[uniform];
+        ASSERT(curRenderState && curRenderState->desc.shader);
+        GLint uid = ((ShaderGL*)curRenderState->desc.shader)->uid[uniform];
         if (uid == -1) return;
         glUniform4fv(uid, count, (GLfloat*)&value);
     }
 
     virtual void setUniform(ShaderUniform uniform, const mat4 &value, int count = 1) override {
-        ASSERT(curState && curState->desc.shader);
-        GLint uid = ((ShaderGL*)curState->desc.shader)->uid[uniform];
+        ASSERT(curRenderState && curRenderState->desc.shader);
+        GLint uid = ((ShaderGL*)curRenderState->desc.shader)->uid[uniform];
         if (uid == -1) return;
         glUniformMatrix4fv(uid, count, false, (GLfloat*)&value);
     }
 
     virtual void draw(const Mesh *mesh, int iStart, int iCount) override {
-        const MeshGL *msh = (MeshGL*)mesh;
+        const MeshGL *obj = (MeshGL*)mesh;
 
         iStart = iStart >= 0 ? iStart : 0;
-        iCount = iCount >= 0 ? iCount : msh->desc.iBuffer->desc.count;
+        iCount = iCount >= 0 ? iCount : obj->desc.iBuffer->desc.count;
 
-        glBindVertexArray(msh->id);
+        glBindVertexArray(obj->id);
         glDrawElements(GL_TRIANGLES, iCount, GL_UNSIGNED_SHORT, (Index*)NULL + iStart);
     }
 };
