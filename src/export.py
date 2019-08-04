@@ -13,8 +13,8 @@ MatGL = Matrix(([-1, 0, 0, 0],
                 [ 0, 0, 0, 1]))
 InvMatGL = MatGL.inverted()
 
-def writeTransform(file, obj):
-    m = MatGL * obj.matrix_local * InvMatGL
+def writeTransform(file, matrix):
+    m = MatGL * matrix * InvMatGL
     m.transpose()
     # write 16 floats
     for row in m:
@@ -116,8 +116,10 @@ def export(path):
             type = 0
         if obj.type == 'LAMP':
             type = 1
-        if obj.name.startswith('#start'):
+        if obj.type == 'CAMERA':
             type = 2
+        if obj.name.startswith('#start'):
+            type = 3
         if type == -1:
             continue
         objects.append( ( type, obj ) )
@@ -136,10 +138,12 @@ def export(path):
         obj  = item[1]
         print(" ", obj.name)
         file.write(struct.pack('i', type))
-        writeTransform(file, obj)
-        if type == 0:
+        writeTransform(file, obj.matrix_world)
+        if type == 0: # MESH
             writeMaterial(file, obj.material_slots[0].material)
             writeMesh(file, obj.data);
+        if type == 2: # CAMERA
+            file.write(struct.pack('fff', obj.data.angle, obj.data.clip_start, obj.data.clip_end))
 
     file.close()
     

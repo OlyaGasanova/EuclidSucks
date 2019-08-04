@@ -132,6 +132,23 @@ struct mat4 {
         e23 = pos.z;
     }
 
+    vec3 getRot() const {
+        vec3 rot;
+
+        // NOT FOR ALL CASES
+        rot.x = -atan2f(e12, e02);
+        rot.y = -atan2f(e20, e00);
+        rot.z =  atan2f(e21, e11);
+
+        return rot;
+    }
+
+    void setRot(const vec3 &rot) {
+        rotateY(rot.y);
+        rotateX(rot.x);
+        rotateZ(rot.z);
+    }
+
     mat4 inverseOrtho() const {
         mat4 r;
         r.e00 =  e00; r.e10 = e01; r.e20 = e02; r.e30 = 0;

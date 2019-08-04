@@ -9,7 +9,8 @@ struct Entity {
 
     enum Type {
         TYPE_MODEL,
-        TYPE_SUN,
+        TYPE_LIGHT,
+        TYPE_CAMERA,
         TYPE_START,
     };
 
@@ -18,7 +19,9 @@ struct Entity {
     Renderable *renderable;
 
     Entity(Stream *stream, Type type) : type(type), renderable(NULL) {
-        stream->read(&matrix, sizeof(matrix));
+        if (stream) {
+            stream->read(&matrix, sizeof(matrix));
+        }
     }
 
     virtual ~Entity() {
@@ -90,9 +93,9 @@ struct Model : Entity {
 };
 
 
-struct Sun : Entity {
+struct Light : Entity {
 
-    Sun(Stream *stream) : Entity(stream, TYPE_SUN) {
+    Light(Stream *stream) : Entity(stream, TYPE_LIGHT) {
 
     }
 

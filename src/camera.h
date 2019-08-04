@@ -2,8 +2,9 @@
 #define H_CAMERA
 
 #include "utils.h"
+#include "entity.h"
 
-struct Camera {
+struct Camera : Entity {
     vec3  pos;
     vec3  rot;
     float fov;
@@ -15,18 +16,41 @@ struct Camera {
     mat4  mView;
     mat4  mViewProj;
 
-    Camera(const vec3 &pos, const vec3 &rot) : pos(pos), rot(rot), fov(90.0f), znear(0.1f), zfar(1024.0f) {
+    Camera(const vec3 &pos, const vec3 &rot) : Entity(NULL, Entity::TYPE_CAMERA), pos(pos), rot(rot), fov(90.0f), znear(0.1f), zfar(1024.0f) {
+        matrix.identity();
         mView.identity();
+    }
+
+    Camera(Stream *stream) : Entity(stream, Entity::TYPE_CAMERA) {
+        stream->read(&fov,   sizeof(fov));
+        stream->read(&znear, sizeof(znear));
+        stream->read(&zfar,  sizeof(zfar));
+
+        fov *= RAD2DEG;
+    }
+
+    void copyFrom(const Camera *camera) {
+        matrix = camera->matrix;
+        fov    = camera->fov;
+        znear  = camera->znear;
+        zfar   = camera->zfar;
+
+    // TODO use quaternions + pos + uniform scale for all transforms
+        matrix.rotateX(-PI * 0.5f);
+        matrix.rotateZ(PI);
+
+        pos    = matrix.getPos();
+        rot    = matrix.getRot();
     }
 
     void refresh() {
         mProj = mat4::perspective(fov, aspect, znear, zfar);
+
+        matrix.identity();
+        matrix.setPos(pos);
+        matrix.setRot(rot);
         
-        mView.identity();
-        mView.rotateZ(-rot.z);
-        mView.rotateX(-rot.x);
-        mView.rotateY(-rot.y);
-        mView.translate(vec3(-pos.x, -pos.y, -pos.z));
+        mView = matrix.inverseOrtho();
 
         mViewProj = mProj * mView;
     }
@@ -41,9 +65,9 @@ struct Camera {
             rot.x = clamp(rot.x, -PI * 0.5f, PI * 0.5f);
         }
 
-        mat4 mViewInv = mView.inverseOrtho();
-        vec3 D = vec3(mViewInv.dir());
-        vec3 R = vec3(mViewInv.right());
+        vec3 D = vec3(matrix.dir());
+        vec3 R = vec3(matrix.right());
+
         float speed = 2.0f * osDeltaTime;
 
         if (Input::down[KEY_SHIFT]) speed *= 4.0f;

@@ -17,7 +17,7 @@ struct Scene {
     float  time;
 
     Scene(Stream *stream) : time(0.0f) {
-        camera = new Camera(vec3(-11, 9, 0), vec3(0, -PI * 0.5f, 0));
+        camera = new Camera(vec3(0), vec3(0));
 
         {
             char buf[256];
@@ -38,21 +38,19 @@ struct Scene {
                 case Entity::TYPE_MODEL :
                     entities[i] = new Model(stream);
                     break;
-                case Entity::TYPE_SUN :
-                    entities[i] = new Sun(stream);
+                case Entity::TYPE_LIGHT :
+                    entities[i] = new Light(stream);
                     break;
-                case Entity::TYPE_START :
+                case Entity::TYPE_CAMERA :
+                    entities[i] = new Camera(stream);
+                    camera->copyFrom((Camera*)entities[i]);
+                    break;
+                case Entity::TYPE_START  :
                     entities[i] = new Entity(stream, Entity::Type(type));
                     break;
                 default : ASSERT(false);
             }
         }
-
-        //if (start >= 0) {
-        //    camera->pos = entities[start]->matrix.getPos();
-        //}
-
-        camera->pos = camera->pos + vec3(0.0f, 1.0f, 0.0f);
     }
 
     ~Scene() {
@@ -91,7 +89,7 @@ struct Scene {
         renderer->lightPos[1] = vec4(cosf(time) * 4.0f, 2, sinf(time) * 4.0f, 1.0f / 16.0f);
         renderer->lightPos[2] = vec4(+8, 2, 0, 1.0f / 8.0f);
 
-        renderer->viewPos = vec4(camera->pos.x, camera->pos.y, camera->pos.z, 0);
+        renderer->viewPos = vec4(camera->pos, 0.0f);
 
         ctx->setTexture(texEnvmap, sEnvmap);
         ctx->setTexture(texLUT,    sLUT);
