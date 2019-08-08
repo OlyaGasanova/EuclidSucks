@@ -7,9 +7,14 @@
     <Filter Include="context">
       <UniqueIdentifier>{558d7c7e-2a16-4f8c-845a-37ef02d36b40}</UniqueIdentifier>
     </Filter>
+    <Filter Include="entity">
+      <UniqueIdentifier>{cc874bc8-b8fd-421c-b565-f6cdfd05933f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{959fa39d-3469-463c-9179-af0f7a1c412d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\camera.h" />
     <ClInclude Include="..\context.h" />
     <ClInclude Include="..\game.h" />
     <ClInclude Include="..\input.h" />
@@ -29,14 +34,30 @@
     <ClInclude Include="..\math\mat4.h">
       <Filter>math</Filter>
     </ClInclude>
-    <ClInclude Include="..\stream.h" />
     <ClInclude Include="..\scene.h" />
     <ClInclude Include="..\material.h" />
     <ClInclude Include="..\entity.h" />
-    <ClInclude Include="..\dds.h" />
     <ClInclude Include="..\renderer.h" />
-    <ClInclude Include="..\resource_manager.h" />
     <ClInclude Include="..\renderable.h" />
+    <ClInclude Include="..\camera.h">
+      <Filter>entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\model.h">
+      <Filter>entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\light.h">
+      <Filter>entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\array.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\dds.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\stream.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\manager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

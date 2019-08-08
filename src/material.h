@@ -2,7 +2,7 @@
 #define H_MATERIAL
 
 #include "utils.h"
-#include "resource_manager.h"
+#include "manager.h"
 
 #define MAX_MATERIAL_TEXTURES 3
 
@@ -17,48 +17,62 @@ struct Material {
     };
 
     Params      params;
-    RenderState *state;
+    uint32      stages;
     Texture     *textures[MAX_MATERIAL_TEXTURES];
+    RenderState *state;
 
     Material(Stream *stream) {
-        char name[256];
-
-        Shader *shader;
-
-        stream->readStr(name);
-        shader = resourceManager->getShader(name);
+        char str[256];
+        stream->readStr(str);
+        Shader *shader = manager->getShader(str);
 
         for (int i = 0; i < MAX_MATERIAL_TEXTURES; i++) {
-            stream->readStr(name);
-            if (!name[0]) {
+            stream->readStr(str);
+            if (!str[0]) {
                 textures[i] = NULL;
                 continue;
             }
 
-            textures[i] = resourceManager->getTexture(name, Texture::FLAG_REPEAT);
+            textures[i] = manager->getTexture(str, Texture::FLAG_REPEAT);
         }
 
         stream->read(&params, sizeof(params));
 
-        {
-            RenderState::Desc desc;
-            desc.colorMask  = COLOR_MASK_ALL;
-            desc.depthTest  = true;
-            desc.depthWrite = true;
-            desc.cullFace   = FACE_BACK;
-            //desc.pass       = renderer->getRenderPass(Renderer::PASS_DEFAULT);
-            desc.shader     = shader;
+        initState(shader);
+    }
 
-            state = resourceManager->getRenderState(desc);
-        }
+    Material(const char *shaderName) {
+        Shader *shader = manager->getShader(shaderName);
+
+        memset(textures, 0, sizeof(textures));
+        memset(&params, 0, sizeof(params));
+
+        initState(shader);
     }
 
     ~Material() {
         for (int i = 0; i < MAX_MATERIAL_TEXTURES; i++) {
-            resourceManager->releaseTexture(textures[i]);
+            manager->releaseTexture(textures[i]);
         }
-        resourceManager->releaseShader(state->desc.shader);
-        resourceManager->releaseRenderState(state);
+ 
+        manager->releaseShader(state->desc.shader);
+        ctx->destroyResource(state);
+    }
+
+    void initState(Shader *shader) {
+        RenderState::Desc desc;
+        desc.colorMask  = COLOR_MASK_ALL;
+        desc.depthTest  = true;
+        desc.depthWrite = true;
+        desc.cullFace   = FACE_BACK;
+        desc.pass       = manager->getRenderPass(PASS_OPAQUE);
+        desc.shader     = shader;
+
+        state = ctx->createRenderState(desc);
+    }
+
+    void setTexture(ShaderSampler sampler, Texture *texture) {
+        textures[sampler] = texture;
     }
 };
 

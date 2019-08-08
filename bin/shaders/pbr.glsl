@@ -6,8 +6,6 @@ varying vec4 vColor;
 
 attribute vec3 aPosition;
 attribute vec3 aNormal;
-attribute vec4 aTangent;
-attribute vec2 aTexCoord;
 attribute vec4 aColor;
 
 uniform mat4 uViewProj;
@@ -63,8 +61,6 @@ void main() {
     vec3 kd = (vec3(1.0) - F) * (1.0 - METALLIC);
 
     vec3 color = kd * diffuse.xyz + specular;
-    color = color / (color + 1.0);
-    color = pow(color, vec3(1.0/2.2));
 
     fragColor = vec4(color, diffuse.w);
 }

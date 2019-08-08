@@ -5,77 +5,133 @@
 #include "context.h"
 #include "material.h"
 #include "entity.h"
-#include "resource_manager.h"
+#include "manager.h"
 
 #define MAX_LIGHTS  3
 #define MAX_BATCHES 4096
 
 struct Renderer {
+    FrameBuffer::Desc  fboDesc;
 
-    enum Pass {
-        PASS_DEFAULT,
-        PASS_MAX,
-    };
+    int  width;
+    int  height;
 
-    int     width;
-    int     height;
-
-    Pass    pass;
+    Pass pass;
 
     vec4 lightColor[MAX_LIGHTS];
     vec4 lightPos[MAX_LIGHTS];
     vec4 viewPos;
     mat4 mViewProj;
 
-    Renderer(GAPI gapi) : pass(PASS_DEFAULT) {
+    Renderable *rndTonemapping;
+
+    Renderer(GAPI gapi) : pass(PASS_MAX) {
         switch (gapi) {
             case GAPI_GL : ctx = new ContextGL(); break;
             default      : ASSERT(false);
         }
 
-        resourceManager = new ResourceManager(ctx);
+        manager = new Manager();
 
-        ASSERT(MAX_RENDER_TARGETS == 4);
+        { // Tonemapping
+            rndTonemapping = new Renderable();
+            rndTonemapping->material = new Material("tonemap");
 
-        RenderPass::Desc descs[] = {
-        // PASS_DEFAULT
-            RenderPass::Desc(Texture::FMT_RGBA8, Texture::FMT_UNKNOWN, Texture::FMT_UNKNOWN, Texture::FMT_UNKNOWN, Texture::FMT_UNKNOWN,
-                             RenderPass::OP_COLOR_CLEAR | RenderPass::OP_DEPTH_CLEAR | RenderPass::OP_STENCIL_CLEAR | RenderPass::OP_COLOR_STORE)
-        };
+            Buffer *iBuffer;
+            Buffer *vBuffer;
 
-        ASSERT(COUNT(descs) == PASS_MAX);
+            { // read indices
+                Index indices[] = { 0, 1, 2, 0, 2, 3 };
 
-        for (int i = 0; i < PASS_MAX; i++) {
-            renderPass[i] = ctx->createRenderPass(descs[i]);
+                Buffer::Desc desc;
+                desc.flags  = BUF_INDEX;
+                desc.count  = COUNT(indices);
+                desc.stride = sizeof(Index);
+                desc.data   = indices;
+
+                iBuffer = ctx->createBuffer(desc);
+            }
+
+            { // read vertices
+                Vertex vertices[] = {
+                    Vertex(vec3(-1, -1, 0), vec3(0), vec2(0), vec4(0)),
+                    Vertex(vec3(+1, -1, 0), vec3(0), vec2(0), vec4(0)),
+                    Vertex(vec3(+1, +1, 0), vec3(0), vec2(0), vec4(0)),
+                    Vertex(vec3(-1, +1, 0), vec3(0), vec2(0), vec4(0))
+                };
+
+                Buffer::Desc desc;
+                desc.flags  = BUF_VERTEX;
+                desc.count  = COUNT(vertices);
+                desc.stride = sizeof(Vertex);
+                desc.data   = vertices;
+
+                vBuffer = ctx->createBuffer(desc);
+            }
+
+            { // create mesh
+                Mesh::Desc desc;
+                desc.iBuffer = iBuffer;
+                desc.vBuffer = vBuffer;
+                desc.vStart  = 0;
+
+                rndTonemapping->mesh = ctx->createMesh(desc);
+            }
         }
     }
 
     ~Renderer() {
-        for (int i = 0; i < PASS_MAX; i++) {
-            ctx->destroyResource(renderPass[i]);
-        }
-        delete resourceManager;
+        delete rndTonemapping;
+
+        delete manager;
         delete ctx;
     }
 
     void resize(int width, int height) {
+        if (this->width == width && this->height == height) {
+            return;
+        }
+
         this->width  = width;
         this->height = height;
         ctx->resize(width, height);
-    }
 
-    RenderPass* getRenderPass(Pass pass) {
-        return renderPass[pass];
+        manager->freeFrameBuffers();
+        manager->freeRenderTargets();
+        manager->initRenderTargets(width, height);
     }
 
     void begin() {
         ctx->resetRenderState();
-        ctx->setViewport(0, 0, width, height);
-        ctx->clear(CLEAR_MASK_ALL, vec4(0.4f, 0.7f, 1.0f, 1.0));
     }
 
     void end() {
         ctx->present();
+    }
+
+    void setRenderTarget(int output, RenderTarget rt = RT_MAX, uint16 level = 0, uint16 face = 0) {
+        fboDesc.rt[output] = TargetView(manager->getRenderTarget(rt), level, face);
+    }
+
+    void setDepthTarget(RenderTarget rt = RT_MAX, uint16 level = 0, uint16 face = 0) {
+        fboDesc.ds = TargetView(manager->getRenderTarget(rt), level, face);
+    }
+
+    void beginPass(Pass pass) {
+        ASSERT(this->pass == PASS_MAX);
+        this->pass = pass;
+
+        fboDesc.pass = manager->getRenderPass(pass);
+
+        FrameBuffer *fb = manager->getFrameBuffer(pass, fboDesc);
+        ctx->beginPass(fb);
+    }
+
+    void endPass() {
+        ASSERT(this->pass != PASS_MAX);
+        this->pass = PASS_MAX;
+
+        ctx->endPass();
     }
 
     void setMaterial(Material *material) {
@@ -97,15 +153,20 @@ struct Renderer {
 
     void render(Renderable *renderable) {
         setMaterial(renderable->material);
-        
+
     // set model params
         ctx->setUniform(uModel, renderable->matrix);
 
         ctx->draw(renderable->mesh);
     }
 
-private:
-    RenderPass *renderPass[PASS_MAX];
+    void tonemapping() {
+        beginPass(PASS_TONEMAPPING);
+        rndTonemapping->material->setTexture(sDiffuse, manager->getRenderTarget(RT_MAIN_HDR));
+        render(rndTonemapping);
+        rndTonemapping->material->setTexture(sDiffuse, NULL);
+        endPass();
+    }
 };
 
 Renderer *renderer = NULL;

@@ -4,7 +4,6 @@
 #include "input.h"
 #include "renderer.h"
 #include "utils.h"
-#include "camera.h"
 #include "scene.h"
 
 #define MAX_TIME_STEP_MS 20
@@ -59,6 +58,7 @@ namespace Game {
         renderer->begin();
 
         scene->render();
+        scene->compose();
 
         renderer->end();
 

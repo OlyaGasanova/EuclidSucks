@@ -63,14 +63,40 @@ struct Color32 {
     uint8 r, g, b, a;
 };
 
+template <class T>
+void qsort(T* v, int L, int R) {
+    int i = L;
+    int j = R;
+    const T m = v[(L + R) / 2];
+
+    while (i <= j) {
+        while (T::cmp(v[i], m) < 0) i++;
+        while (T::cmp(m, v[j]) < 0) j--;
+
+        if (i <= j)
+            swap(v[i++], v[j--]);
+    }
+
+    if (L < j) qsort(v, L, j);
+    if (i < R) qsort(v, i, R);
+}
+
+template <class T>
+void sort(T *items, int count) {
+    if (count > 1) {
+        qsort(items, 0, count - 1);
+    }
+}
+
+
 #include "math/vec2.h"
 #include "math/vec3.h"
 #include "math/vec4.h"
 #include "math/mat4.h"
 
-#include "stream.h"
-
-#include "dds.h"
+#include "common/stream.h"
+#include "common/array.h"
+#include "common/dds.h"
 
 // file system
 char* readFile(const char *name, uint32 &size) {

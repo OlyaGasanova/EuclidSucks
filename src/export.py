@@ -39,10 +39,17 @@ def writeMaterial(file, material):
             texName = os.path.splitext(bpy.path.basename(slot.texture.image.filepath))[0]
         writeString(file, texName)
     # get shader input params
-    inputs = material.node_tree.nodes[1].inputs;
-    color     = list(inputs['Base Color'].default_value)
-    metallic  = inputs['Metallic'].default_value
-    roughness = inputs['Roughness'].default_value
+    BSDF = material.node_tree.nodes.get("Principled BSDF")
+    if BSDF != None:
+        inputs = BSDF.inputs;
+        color     = list(inputs['Base Color'].default_value)
+        metallic  = inputs['Metallic'].default_value
+        roughness = inputs['Roughness'].default_value
+    else:
+        color     = (1.0, 1.0, 1.0, 1.0)
+        metallic  = 0.0
+        roughness = 0.0
+    
     # write params
     file.write(struct.pack('ffff', color[0], color[1], color[2], color[3]))
     file.write(struct.pack('f', metallic))
