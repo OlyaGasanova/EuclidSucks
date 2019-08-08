@@ -4,16 +4,22 @@
 #include "utils.h"
 #include "context.h"
 
+#define RENDER_PASS(E) \
+    E( PASS_OPAQUE      ) \
+    E( PASS_TONEMAPPING )
+
+#define RENDER_TARGET(E) \
+    E( RT_MAIN_HDR      ) \
+    E( RT_MAIN_DEPTH    )
+
 enum Pass {
-    PASS_OPAQUE,
-    PASS_TONEMAPPING,
+    RENDER_PASS(DECL_ENUM)
     PASS_MAX,
     PASS_FINAL = PASS_TONEMAPPING
 };
 
 enum RenderTarget {
-    RT_MAIN_HDR,
-    RT_MAIN_DEPTH,
+    RENDER_TARGET(DECL_ENUM)
     RT_MAX
 };
 
@@ -82,8 +88,11 @@ struct Manager {
 
         ASSERT(COUNT(descs) == RT_MAX);
 
+        static const char *RenderTargetName[] = { RENDER_TARGET(DECL_STR) };
+
         for (int i = 0; i < RT_MAX; i++) {
             rto[i] = ctx->createTexture(descs[i]);
+            rto[i]->setLabel(RenderTargetName[i]);
         }
     }
 
@@ -216,6 +225,8 @@ struct Manager {
             texture = ctx->createTexture(desc);
             delete[] desc.data;
 
+            texture->setLabel(name);
+
             textures.push(new Resource(name, texture));
         }
 
@@ -239,6 +250,8 @@ struct Manager {
             desc.data = readFile(path, desc.size);
             shader = ctx->createShader(desc);
             delete[] desc.data;
+
+            shader->setLabel(name);
 
             shaders.push(new Resource(name, shader));
         }

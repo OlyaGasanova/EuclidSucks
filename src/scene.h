@@ -78,6 +78,8 @@ struct Scene {
     }
 
     void render() {
+        GPU_MARKER("Scene");
+
         renderer->setRenderTarget(0, RT_MAIN_HDR);
         renderer->setDepthTarget(RT_MAIN_DEPTH);
 
@@ -121,7 +123,8 @@ struct Scene {
     }
 
     void compose() {
-        // ...
+        GPU_MARKER("Compose");
+
         renderer->tonemapping();
     }
 };

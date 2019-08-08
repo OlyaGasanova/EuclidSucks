@@ -53,6 +53,10 @@
     PFNGLCHECKFRAMEBUFFERSTATUSPROC     glCheckFramebufferStatus;
     PFNGLDELETEFRAMEBUFFERSPROC         glDeleteFramebuffers;
     PFNGLDELETERENDERBUFFERSPROC        glDeleteRenderbuffers;
+// Profile
+    PFNGLOBJECTLABELPROC                glObjectLabel;
+    PFNGLPUSHDEBUGGROUPPROC             glPushDebugGroup;
+    PFNGLPOPDEBUGGROUPPROC              glPopDebugGroup;
 // Common
     PFNGLSTENCILFUNCSEPARATEPROC        glStencilFuncSeparate;
     PFNGLSTENCILMASKSEPARATEPROC        glStencilMaskSeparate;
@@ -189,6 +193,10 @@ struct TextureGL : Texture {
         glActiveTexture(GL_TEXTURE0 + sampler);
         glBindTexture(target, id);
     }
+
+    virtual void setLabel(const char *text) override {
+        glObjectLabel(GL_TEXTURE, id, -1, text);
+    }
 };
 
 
@@ -284,6 +292,10 @@ struct ShaderGL : Shader {
 
     void bind() {
         glUseProgram(id);
+    }
+
+    virtual void setLabel(const char *text) override {
+        glObjectLabel(GL_PROGRAM, id, -1, text);
     }
 };
 
@@ -552,6 +564,10 @@ struct ContextGL : Context {
         GetProcOGL( glCheckFramebufferStatus );
         GetProcOGL( glDeleteFramebuffers );
         GetProcOGL( glDeleteRenderbuffers );
+    // Profile
+        GetProcOGL( glObjectLabel );
+        GetProcOGL( glPushDebugGroup );
+        GetProcOGL( glPopDebugGroup );
     // Common
         GetProcOGL( glStencilFuncSeparate );
         GetProcOGL( glStencilMaskSeparate );
@@ -712,6 +728,14 @@ struct ContextGL : Context {
         glDrawElements(GL_TRIANGLES, iCount, GL_UNSIGNED_SHORT, (Index*)NULL + iStart);
 
         Context::draw(mesh, iStart, iCount);
+    }
+
+    virtual void pushMarker(const char *title) override {
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, title);
+    }
+
+    virtual void popMarker() override {
+        glPopDebugGroup();
     }
 };
 

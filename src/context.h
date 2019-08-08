@@ -109,6 +109,8 @@ struct Texture : ContextResource {
     } desc;
 
     Texture(const Desc &desc) : desc(desc) {}
+
+    virtual void setLabel(const char *text) {}
 };
 
 
@@ -150,6 +152,8 @@ struct Shader : ContextResource {
     } desc;
 
     Shader(const Desc &desc) : desc(desc) {}
+
+    virtual void setLabel(const char *text) {}
 };
 
 
@@ -415,6 +419,9 @@ struct Context {
     virtual void setUniform(ShaderUniform uniform, const mat4 &value, int count = 1) {}
 
     virtual void draw(const Mesh *mesh, int iStart = -1, int iCount = -1) {}
+
+    virtual void pushMarker(const char *title) {}
+    virtual void popMarker() {}
 };
 
 #include "context/gl.h"
@@ -426,5 +433,20 @@ enum GAPI {
 };
 
 Context *ctx;
+
+
+struct Marker {
+
+    Marker(const char *title) {
+        ctx->pushMarker(title);
+    }
+
+    ~Marker() {
+        ctx->popMarker();
+    }
+
+};
+
+#define GPU_MARKER(title) Marker _marker##__LINE__(title)
 
 #endif

@@ -121,6 +121,9 @@ struct Renderer {
         ASSERT(this->pass == PASS_MAX);
         this->pass = pass;
 
+        static const char *RenderPassName[] = { RENDER_PASS(DECL_STR) };
+        ctx->pushMarker(RenderPassName[pass]);
+
         fboDesc.pass = manager->getRenderPass(pass);
 
         FrameBuffer *fb = manager->getFrameBuffer(pass, fboDesc);
@@ -132,6 +135,7 @@ struct Renderer {
         this->pass = PASS_MAX;
 
         ctx->endPass();
+        ctx->popMarker();
     }
 
     void setMaterial(Material *material) {

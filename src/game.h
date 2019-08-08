@@ -55,6 +55,8 @@ namespace Game {
     }
 
     void render() {
+        GPU_MARKER("Frame");
+
         renderer->begin();
 
         scene->render();
