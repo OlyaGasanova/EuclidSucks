@@ -34,7 +34,7 @@ uniform vec4 uParams[2];
 
 // OGL has flipped Y for 2D textures
 vec4 fetch2D(sampler2D smp, vec2 tc) {
-    return texture2D(sLUT, vec2(tc.x, 1.0 - tc.x));
+    return texture2D(sLUT, vec2(tc.x, 1.0 - tc.y));
 }
 
 // OGL has flipped -X and +X direction for cubemap textures
