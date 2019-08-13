@@ -4,8 +4,12 @@
 #include "entity.h"
 
 struct Model : Entity {
-    
-    Model(Stream *stream) : Entity(stream, TYPE_MODEL) {
+    int32  iCount;
+    int32  vCount;
+    Index  *indices;
+    Vertex *vertices;
+
+    Model(Stream *stream, bool resident = true) : Entity(stream, TYPE_MODEL) {
         renderable = new Renderable();
 
         // read material
@@ -15,37 +19,41 @@ struct Model : Entity {
         Buffer *vBuffer;
 
         { // read indices
-            int32 count;
-            stream->read(&count, sizeof(count));
-            Index *indices = new Index[count];
-            stream->read(indices, count * sizeof(Index));
+            stream->read(&iCount, sizeof(iCount));
+            indices = new Index[iCount];
+            stream->read(indices, iCount * sizeof(Index));
 
             Buffer::Desc desc;
             desc.flags  = BUF_INDEX;
-            desc.count  = count;
+            desc.count  = iCount;
             desc.stride = sizeof(Index);
             desc.data   = indices;
 
             iBuffer = ctx->createBuffer(desc);
 
-            delete[] indices;
+            if (resident) {
+                delete[] indices;
+                indices = NULL;
+            }
         }
 
         { // read vertices
-            int32 count;
-            stream->read(&count, sizeof(count));
-            Vertex *vertices = new Vertex[count];
-            stream->read(vertices, count * sizeof(Vertex));
+            stream->read(&vCount, sizeof(vCount));
+            vertices = new Vertex[vCount];
+            stream->read(vertices, vCount * sizeof(Vertex));
 
             Buffer::Desc desc;
             desc.flags  = BUF_VERTEX;
-            desc.count  = count;
+            desc.count  = vCount;
             desc.stride = sizeof(Vertex);
             desc.data   = vertices;
 
             vBuffer = ctx->createBuffer(desc);
 
-            delete[] vertices;
+            if (resident) {
+                delete[] vertices;
+                vertices = NULL;
+            }
         }
 
         { // create mesh
@@ -56,6 +64,11 @@ struct Model : Entity {
 
             renderable->mesh = ctx->createMesh(desc);
         }
+    }
+
+    virtual ~Model() {
+        delete[] indices;
+        delete[] vertices;
     }
 
     virtual void update() override {

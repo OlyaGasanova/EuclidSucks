@@ -48,6 +48,11 @@ inline const T& max(const T &a, const T &b) {
     return a > b ? a : b;
 }
 
+template <class T>
+inline const int sign(const T &x) {
+    return x > 0 ? 1 : (x < 0 ? -1 : 0);
+}
+
 void sincos(float r, float *s, float *c) {
     *s = sinf(r);
     *c = cosf(r);
@@ -93,6 +98,8 @@ void sort(T *items, int count) {
 #include "math/vec3.h"
 #include "math/vec4.h"
 #include "math/mat4.h"
+#include "math/segment.h"
+#include "math/triangle.h"
 
 #include "common/stream.h"
 #include "common/array.h"

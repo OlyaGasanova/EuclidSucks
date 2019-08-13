@@ -8,6 +8,11 @@
     E( PASS_OPAQUE      ) \
     E( PASS_TONEMAPPING )
 
+#define RENDER_TECH(E) \
+    E( TECH_COMMON      ) \
+    E( TECH_SFILL       ) \
+    E( TECH_STEST       )
+
 #define RENDER_TARGET(E) \
     E( RT_MAIN_HDR      ) \
     E( RT_MAIN_DEPTH    )
@@ -16,6 +21,11 @@ enum Pass {
     RENDER_PASS(DECL_ENUM)
     PASS_MAX,
     PASS_FINAL = PASS_TONEMAPPING
+};
+
+enum Tech {
+    RENDER_TECH(DECL_ENUM)
+    TECH_MAX
 };
 
 enum RenderTarget {

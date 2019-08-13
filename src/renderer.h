@@ -17,6 +17,7 @@ struct Renderer {
     int  height;
 
     Pass pass;
+    Tech tech;
 
     vec4 lightColor[MAX_LIGHTS];
     vec4 lightPos[MAX_LIGHTS];
@@ -25,7 +26,7 @@ struct Renderer {
 
     Renderable *rndTonemapping;
 
-    Renderer(GAPI gapi) : pass(PASS_MAX) {
+    Renderer(GAPI gapi) : pass(PASS_MAX), tech(TECH_MAX) {
         switch (gapi) {
             case GAPI_GL : ctx = new ContextGL(); break;
             default      : ASSERT(false);
@@ -139,7 +140,14 @@ struct Renderer {
     }
 
     void setMaterial(Material *material) {
-        ctx->setRenderState(material->state);
+        RenderState *state = material->getRenderState(pass, tech);
+
+        if (!state) {
+            ASSERT(false);
+            return;
+        }
+
+        ctx->setRenderState(state);
         for (int i = 0; i < MAX_MATERIAL_TEXTURES; i++) {
             if (material->textures[i]) {
                 ctx->setTexture(material->textures[i], ShaderSampler(i));

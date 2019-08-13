@@ -55,6 +55,21 @@ struct mat4 {
         *this = mat4(1.0f);
     }
 
+    vec3 operator * (const vec3 &v) const {
+        return vec3(
+            e00 * v.x + e01 * v.y + e02 * v.z + e03,
+            e10 * v.x + e11 * v.y + e12 * v.z + e13,
+            e20 * v.x + e21 * v.y + e22 * v.z + e23);
+    }
+
+    vec4 operator * (const vec4 &v) const {
+        return vec4(
+            e00 * v.x + e01 * v.y + e02 * v.z + e03 * v.w,
+            e10 * v.x + e11 * v.y + e12 * v.z + e13 * v.w,
+            e20 * v.x + e21 * v.y + e22 * v.z + e23 * v.w,
+            e30 * v.x + e31 * v.y + e32 * v.z + e33 * v.w);
+    }
+
     mat4 operator * (const mat4 &m) const {
         mat4 r;
         r.e00 = e00 * m.e00 + e01 * m.e10 + e02 * m.e20 + e03 * m.e30;

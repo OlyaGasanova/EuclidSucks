@@ -39,15 +39,6 @@
     <ClInclude Include="..\entity.h" />
     <ClInclude Include="..\renderer.h" />
     <ClInclude Include="..\renderable.h" />
-    <ClInclude Include="..\camera.h">
-      <Filter>entity</Filter>
-    </ClInclude>
-    <ClInclude Include="..\model.h">
-      <Filter>entity</Filter>
-    </ClInclude>
-    <ClInclude Include="..\light.h">
-      <Filter>entity</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\array.h">
       <Filter>common</Filter>
     </ClInclude>
@@ -58,6 +49,24 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\manager.h" />
+    <ClInclude Include="..\entity\camera.h">
+      <Filter>entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\entity\light.h">
+      <Filter>entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\entity\model.h">
+      <Filter>entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\entity\portal.h">
+      <Filter>entity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\math\triangle.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\math\segment.h">
+      <Filter>math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

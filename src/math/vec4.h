@@ -14,4 +14,12 @@ struct vec4 {
     operator vec3() const { return vec3(x, y, z); };
 };
 
+vec4 operator * (const vec4 &a, float s) {
+    return vec4(a.x * s, a.y * s, a.z * s, a.w * s);
+}
+
+float dot(const vec4 &a, const vec4 &b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
+
 #endif

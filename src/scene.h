@@ -5,6 +5,8 @@
 #include "context.h"
 #include "entity.h"
 
+#define MAX_RECURSION_DEPTH 1
+
 struct Scene {
     Array<Entity*> entities;
 
@@ -50,10 +52,22 @@ struct Scene {
                 case Entity::TYPE_START  :
                     entity = new Entity(stream, Entity::Type(type));
                     break;
+                case Entity::TYPE_PORTAL :
+                    entity = new Portal(stream);
+                    break;
                 default : ASSERT(false);
             }
 
             entities.push(entity);
+        }
+
+        // linking portals
+        for (int i = 0; i < entitiesCount; i++) {
+            Entity *entity = entities[i];
+            if (entity->type == Entity::TYPE_PORTAL) {
+                Portal* portal = (Portal*)entity;
+                portal->warpEntity = (Portal*)entities[portal->warpIndex];
+            }
         }
     }
 
@@ -69,11 +83,110 @@ struct Scene {
     }
 
     void update() {
-        camera->control();
         time += osDeltaTime;
+
+        vec3 a = camera->matrix.getPos();
+        camera->control();
+        vec3 b = camera->matrix.getPos();
+
+        bool moved = a.x != b.x || a.y != b.y || a.z != b.z;
 
         for (int i = 0; i < entities.length; i++) {
             entities[i]->update();
+
+            // check camera vs portal collision
+            if (moved && entities[i]->type == Entity::TYPE_PORTAL) {
+                Portal *portal = (Portal*)entities[i];
+                if (portal->collide(a, b)) {
+                    camera->matrix = (camera->matrix.inverseOrtho() * portal->warpTransform).inverseOrtho();
+                    camera->pos   = camera->matrix.getPos();
+                    camera->rot.y = camera->matrix.getRot().y;
+                }
+            }
+        }
+
+        vec3 r = camera->rot;
+        vec3 p = camera->matrix.getRot();
+    }
+
+    void renderEntities(int recursionDepth, uint32 portalIndex) {
+        GPU_MARKER("Entities");
+    // render meshes
+        for (int i = 0; i < entities.length; i++) {
+            Entity *entity = entities[i];
+
+            entity->flags.visible = false;
+
+            if (!entity->renderable || entity->flags.hidden) {
+                continue;
+            }
+
+            // TODO frustum culling
+            entity->flags.visible = true;
+
+            if (entity->type == Entity::TYPE_PORTAL) {
+                continue;
+            }
+
+            renderer->render(entity->renderable);
+        }
+
+        if (recursionDepth == 0) {
+            return;
+        }
+
+    // render portals
+        uint32 index = portalIndex;
+
+        {
+            GPU_MARKER("Mask Portals");
+            renderer->tech = TECH_SFILL;
+            for (int i = 0; i < entities.length; i++) {
+                Entity *entity = entities[i];
+
+                if (!entity->flags.visible || entity->type != Entity::TYPE_PORTAL) {
+                    continue;
+                }
+
+                Portal *portal = (Portal*)entity;
+                renderer->mViewProj = portal->getObliqueViewProj(camera->mProj, camera->mView);
+
+                ctx->setStencilRef(index++); // set portal index to fill
+                renderer->render(entity->renderable);
+            }
+        }
+
+        uint32 nextPortalIndex = index;
+        index = portalIndex;
+
+        {
+            GPU_MARKER("Portals");
+            ctx->clear(CLEAR_MASK_DEPTH);
+            renderer->tech = TECH_STEST;
+            for (int i = 0; i < entities.length; i++) {
+                Entity *entity = entities[i];
+
+                if (!entity->flags.visible || entity->type != Entity::TYPE_PORTAL) {
+                    continue;
+                }
+
+                Portal *portal = (Portal*)entity;
+
+                mat4 mView = camera->mView * portal->warpTransform;
+
+                renderer->viewPos = vec4(mView.inverseOrtho().getPos(), 1.0);
+
+                renderer->mViewProj = portal->getObliqueViewProj(camera->mProj, mView);
+
+                ctx->setStencilRef(index++); // set portal index for stencil test
+
+                entity->flags.hidden = true;
+                renderEntities(recursionDepth - 1, nextPortalIndex);
+                entity->flags.hidden = false;
+
+                renderer->mViewProj = camera->mViewProj;
+                renderer->viewPos   = vec4(camera->matrix.getPos(), 1.0);
+            }
         }
     }
 
@@ -99,21 +212,14 @@ struct Scene {
         renderer->lightPos[1] = vec4(cosf(time) * 4.0f, 2, sinf(time) * 4.0f, 1.0f / 16.0f);
         renderer->lightPos[2] = vec4(0, 2, +8, 1.0f / 8.0f);
 
-        renderer->viewPos = vec4(camera->pos, 0.0f);
+        renderer->viewPos = vec4(camera->matrix.getPos(), 0.0f);
 
         ctx->setTexture(texEnvmap, sEnvmap);
         ctx->setTexture(texLUT,    sLUT);
     // ----
-        
-        for (int i = 0; i < entities.length; i++) {
-            Entity *entity = entities[i];
 
-            if (!entity->renderable) {
-                continue;
-            }
-
-            renderer->render(entity->renderable);
-        }
+        renderer->tech = TECH_COMMON;
+        renderEntities(MAX_RECURSION_DEPTH, 1);
 
         renderer->endPass();
 

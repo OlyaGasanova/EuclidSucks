@@ -45,11 +45,6 @@ struct Camera : Entity {
 
     void refresh() {
         mProj = mat4::perspective(fov, aspect, znear, zfar);
-
-        matrix.identity();
-        matrix.setPos(pos);
-        matrix.setRot(rot);
-        
         mView = matrix.inverseOrtho();
 
         mViewProj = mProj * mView;
@@ -76,6 +71,10 @@ struct Camera : Entity {
         if (Input::down[KEY_S]) pos = pos + D * speed;
         if (Input::down[KEY_A]) pos = pos - R * speed;
         if (Input::down[KEY_D]) pos = pos + R * speed;
+
+        matrix.identity();
+        matrix.setPos(pos);
+        matrix.setRot(rot);
     }
 };
 

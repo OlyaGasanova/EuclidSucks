@@ -29,7 +29,7 @@ struct FileStream : Stream {
 
     enum Mode {
         MODE_READ,
-        MODE__WRITE
+        MODE_WRITE
     };
 
     FILE *f;

@@ -672,7 +672,9 @@ struct ContextGL : Context {
         }
         stencilRef = ref;
 
-        setStencilRef(stencilRef);
+        ASSERT(curRenderState);
+
+        ((RenderStateGL*)curRenderState)->setStencilRef(stencilRef);
     }
 
     virtual void beginPass(const FrameBuffer *fb) override {

@@ -12,11 +12,20 @@ struct Entity {
         TYPE_LIGHT,
         TYPE_CAMERA,
         TYPE_START,
+        TYPE_PORTAL,
+    };
+
+    union Flags {
+        struct { 
+            uint8 visible:1, hidden:1;
+        };
+        uint8 value;
     };
 
     Entity     *next;
 
     Type       type;
+    Flags      flags;
     mat4       matrix;
     Renderable *renderable;
 
@@ -24,6 +33,7 @@ struct Entity {
         if (stream) {
             stream->read(&matrix, sizeof(matrix));
         }
+        flags.value = 0;
     }
 
     virtual ~Entity() {
@@ -36,5 +46,6 @@ struct Entity {
 #include "entity/camera.h"
 #include "entity/model.h"
 #include "entity/light.h"
+#include "entity/portal.h"
 
 #endif

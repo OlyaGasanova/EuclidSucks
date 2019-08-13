@@ -119,8 +119,16 @@ def export(path):
     
     for obj in bpy.data.scenes[0].objects:
         type = -1
-        if obj.type == 'MESH' and len(obj.material_slots) > 0 and len(obj.material_slots[0].material.texture_slots) > 0:
-            type = 0
+        if obj.type == 'MESH':
+            if obj.name.startswith('#portal'):
+                if obj.get("warp") == None:
+                    raise TypeError('no "warp" param for portal ' + obj.name)
+                if bpy.data.objects.get('#portal.' + obj['warp']) == None:
+                    raise TypeError('no warp object "#portal.' + obj['warp'] + '" found for portal ' + obj.name)
+                type = 4
+            else:
+                if len(obj.material_slots) > 0 and len(obj.material_slots[0].material.texture_slots) > 0:
+                    type = 0
         if obj.type == 'LAMP':
             type = 1
         if obj.type == 'CAMERA':
@@ -145,10 +153,15 @@ def export(path):
         obj  = item[1]
         print(" ", obj.name)
         file.write(struct.pack('i', type))
-        writeTransform(file, obj.matrix_world)
-        if type == 0: # MESH
+        writeTransform(file, obj.matrix_local)
+        if type == 0 or type == 4: # MESH or portal
             writeMaterial(file, obj.material_slots[0].material)
             writeMesh(file, obj.data);
+            
+            if type == 4: # write destination portal index
+                index = objects.index( ( type, bpy.data.objects.get('#portal.' + obj['warp']) ) )
+                file.write(struct.pack('i', index))
+            
         if type == 2: # CAMERA
             file.write(struct.pack('fff', obj.data.angle, obj.data.clip_start, obj.data.clip_end))
 
