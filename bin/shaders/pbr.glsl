@@ -6,8 +6,6 @@ varying vec4 vColor;
 
 attribute vec3 aPosition;
 attribute vec3 aNormal;
-attribute vec4 aTangent;
-attribute vec2 aTexCoord;
 attribute vec4 aColor;
 
 uniform mat4 uViewProj;
@@ -34,28 +32,35 @@ uniform vec4 uParams[2];
 #define ROUGHNESS uParams[1].y
 #define MAX_LOD   5
 
+// OGL has flipped Y for 2D textures
+vec4 fetch2D(sampler2D smp, vec2 tc) {
+    return texture2D(sLUT, vec2(tc.x, 1.0 - tc.y));
+}
+
+// OGL has flipped -X and +X direction for cubemap textures
+vec4 fetchCube(samplerCube smp, vec3 tc, float level) {
+    return textureLod(smp, vec3(-tc.x, tc.y, tc.z), level);
+}
+
 void main() {
-    vec3 n  = normalize(vNormal.xyz);
+    vec3 n = normalize(vNormal.xyz);
     vec3 v = normalize(uViewPos.xyz - vCoord.xyz);
     vec3 r = reflect(-v, n);
 
-    vec4 diffuse  = vColor * COLOR;
+    vec4 diffuse = vColor * COLOR;
 
     vec3 F0 = mix(vec3(0.04), diffuse.xyz, METALLIC);
     vec3 F = F0 + (max(vec3(1.0 - ROUGHNESS), F0) - F0) * pow(1.0 - dot(n, v), 5.0);
 
-    diffuse.xyz  *= textureLod(sEnvmap, n, (MAX_LOD + 1)).xyz;
+    diffuse.xyz  *= fetchCube(sEnvmap, n, MAX_LOD).xyz;
+    vec3 specular = fetchCube(sEnvmap, r, ROUGHNESS * MAX_LOD).xyz;
+    vec2 lut      = fetch2D(sLUT, vec2(max(0.0, dot(n, v)), ROUGHNESS)).xy;
 
-    vec3 specular = textureLod(sEnvmap, normalize(r), ROUGHNESS * MAX_LOD).xyz;
-    vec2 lut      = texture2D(sLUT, vec2(max(0.0, dot(n, v)), ROUGHNESS)).xy;
-    
     specular = specular * (F * lut.x + lut.y);
 
     vec3 kd = (vec3(1.0) - F) * (1.0 - METALLIC);
 
     vec3 color = kd * diffuse.xyz + specular;
-    color = color / (color + 1.0);
-    color = pow(color, vec3(1.0/2.2));
 
     fragColor = vec4(color, diffuse.w);
 }

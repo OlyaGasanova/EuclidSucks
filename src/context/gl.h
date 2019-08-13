@@ -53,6 +53,10 @@
     PFNGLCHECKFRAMEBUFFERSTATUSPROC     glCheckFramebufferStatus;
     PFNGLDELETEFRAMEBUFFERSPROC         glDeleteFramebuffers;
     PFNGLDELETERENDERBUFFERSPROC        glDeleteRenderbuffers;
+// Profile
+    PFNGLOBJECTLABELPROC                glObjectLabel;
+    PFNGLPUSHDEBUGGROUPPROC             glPushDebugGroup;
+    PFNGLPOPDEBUGGROUPPROC              glPopDebugGroup;
 // Common
     PFNGLSTENCILFUNCSEPARATEPROC        glStencilFuncSeparate;
     PFNGLSTENCILMASKSEPARATEPROC        glStencilMaskSeparate;
@@ -94,30 +98,31 @@ struct TextureGL : Texture {
         const static struct FormatInfo {
             GLenum iformat, format, type, bpp;
         } info[] = {
-            { 0,                                           0,              0,                                       1 }, // FMT_UNKNOWN
-            { GL_R8,                                       GL_RED,         GL_UNSIGNED_BYTE,                        8 }, // FMT_R8
-            { GL_RG8,                                      GL_RG,          GL_UNSIGNED_BYTE,                       16 }, // FMT_RG8
-            { GL_RGBA8,                                    GL_RGBA,        GL_UNSIGNED_BYTE,                       32 }, // FMT_RGBA8
-            { GL_SRGB8_ALPHA8_EXT,                         GL_RGBA,        GL_UNSIGNED_BYTE,                       32 }, // FMT_RGBA8_SRGB
-            { GL_R16F,                                     GL_RED,         GL_HALF_FLOAT,                          16 }, // FMT_R16F
-            { GL_RG16F,                                    GL_RG,          GL_HALF_FLOAT,                          32 }, // FMT_RG16F
-            { GL_RGBA16F,                                  GL_RGBA,        GL_HALF_FLOAT,                          64 }, // FMT_RGBA16F
-            { GL_R32F,                                     GL_RED,         GL_FLOAT,                               32 }, // FMT_R32F
-            { GL_RG32F,                                    GL_RG,          GL_FLOAT,                               64 }, // FMT_RG32F
-            { GL_RGB32F,                                   GL_RGB,         GL_FLOAT,                               96 }, // FMT_RGB32F
-            { GL_RGBA32F,                                  GL_RGBA,        GL_FLOAT,                              128 }, // FMT_RGBA32F
-            { GL_R11F_G11F_B10F_EXT,                       GL_RGB,         GL_UNSIGNED_INT_10F_11F_11F_REV_EXT,    32 }, // FMT_R11G11B10
-            { GL_COMPRESSED_RGB_S3TC_DXT1_EXT,             0,              0,                                       4 }, // FMT_BC1
-            { GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT,      0,              0,                                       4 }, // FMT_BC1_SRGB
-            { GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,            0,              0,                                       8 }, // FMT_BC2
-            { GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT,      0,              0,                                       8 }, // FMT_BC2_SRGB
-            { GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,            0,              0,                                       8 }, // FMT_BC3
-            { GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT,      0,              0,                                       8 }, // FMT_BC3_SRGB
-            { GL_COMPRESSED_RED_RGTC1,                     0,              0,                                       4 }, // FMT_BC4
-            { GL_COMPRESSED_RG_RGTC2,                      0,              0,                                       8 }, // FMT_BC5
-            { GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT,       0,              0,                                       8 }, // FMT_BC6
-            { GL_COMPRESSED_RGBA_BPTC_UNORM,               0,              0,                                       8 }, // FMT_BC7
-            { GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM,         0,              0,                                       8 }, // FMT_BC7_SRGB
+            { 0,                                           0,                0,                                       1 }, // FMT_UNKNOWN
+            { GL_R8,                                       GL_RED,           GL_UNSIGNED_BYTE,                        8 }, // FMT_R8
+            { GL_RG8,                                      GL_RG,            GL_UNSIGNED_BYTE,                       16 }, // FMT_RG8
+            { GL_RGBA8,                                    GL_RGBA,          GL_UNSIGNED_BYTE,                       32 }, // FMT_RGBA8
+            { GL_SRGB8_ALPHA8_EXT,                         GL_RGBA,          GL_UNSIGNED_BYTE,                       32 }, // FMT_RGBA8_SRGB
+            { GL_R16F,                                     GL_RED,           GL_HALF_FLOAT,                          16 }, // FMT_R16F
+            { GL_RG16F,                                    GL_RG,            GL_HALF_FLOAT,                          32 }, // FMT_RG16F
+            { GL_RGBA16F,                                  GL_RGBA,          GL_HALF_FLOAT,                          64 }, // FMT_RGBA16F
+            { GL_R32F,                                     GL_RED,           GL_FLOAT,                               32 }, // FMT_R32F
+            { GL_RG32F,                                    GL_RG,            GL_FLOAT,                               64 }, // FMT_RG32F
+            { GL_RGB32F,                                   GL_RGB,           GL_FLOAT,                               96 }, // FMT_RGB32F
+            { GL_RGBA32F,                                  GL_RGBA,          GL_FLOAT,                              128 }, // FMT_RGBA32F
+            { GL_R11F_G11F_B10F_EXT,                       GL_RGB,           GL_UNSIGNED_INT_10F_11F_11F_REV_EXT,    32 }, // FMT_R11G11B10
+            { GL_DEPTH24_STENCIL8,                         GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8,                   32 }, // FMT_D24S8
+            { GL_COMPRESSED_RGB_S3TC_DXT1_EXT,             0,                0,                                       4 }, // FMT_BC1
+            { GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT,      0,                0,                                       4 }, // FMT_BC1_SRGB
+            { GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,            0,                0,                                       8 }, // FMT_BC2
+            { GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT,      0,                0,                                       8 }, // FMT_BC2_SRGB
+            { GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,            0,                0,                                       8 }, // FMT_BC3
+            { GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT,      0,                0,                                       8 }, // FMT_BC3_SRGB
+            { GL_COMPRESSED_RED_RGTC1,                     0,                0,                                       4 }, // FMT_BC4
+            { GL_COMPRESSED_RG_RGTC2,                      0,                0,                                       8 }, // FMT_BC5
+            { GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT,       0,                0,                                       8 }, // FMT_BC6
+            { GL_COMPRESSED_RGBA_BPTC_UNORM,               0,                0,                                       8 }, // FMT_BC7
+            { GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM,         0,                0,                                       8 }, // FMT_BC7_SRGB
         };
 
         ASSERT(COUNT(info) == Texture::FMT_MAX);
@@ -187,6 +192,10 @@ struct TextureGL : Texture {
     void bind(ShaderSampler sampler) const {
         glActiveTexture(GL_TEXTURE0 + sampler);
         glBindTexture(target, id);
+    }
+
+    virtual void setLabel(const char *text) override {
+        glObjectLabel(GL_TEXTURE, id, -1, text);
     }
 };
 
@@ -284,6 +293,10 @@ struct ShaderGL : Shader {
     void bind() {
         glUseProgram(id);
     }
+
+    virtual void setLabel(const char *text) override {
+        glObjectLabel(GL_PROGRAM, id, -1, text);
+    }
 };
 
 
@@ -326,6 +339,42 @@ struct FrameBufferGL : FrameBuffer {
 
     FrameBufferGL(const FrameBuffer::Desc &desc) : FrameBuffer(desc) {
         glGenFramebuffers(1, &id);
+        glBindFramebuffer(GL_FRAMEBUFFER, id);
+
+        // color attachments
+        for (int i = 0; i < COUNT(desc.rt); i++) {
+            TextureGL *tex = (TextureGL*)desc.rt[i].texture;
+            if (!tex) continue;
+
+            GLenum target = GL_TEXTURE_2D;
+            if (tex->desc.flags & Texture::FLAG_CUBEMAP) {
+                uint32 face = desc.rt[i].face;
+                ASSERT(face >= 0 && face <= 6);
+                target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
+            }
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, target, tex->id, desc.rt[i].level);
+        }
+
+        // depth stencil attachment
+        if (desc.ds.texture) {
+            TextureGL *tex = (TextureGL*)desc.ds.texture;
+
+            GLenum target = GL_TEXTURE_2D;
+            if (tex->desc.flags & Texture::FLAG_CUBEMAP) {
+                uint32 face = desc.ds.face;
+                ASSERT(face >= 0 && face <= 6);
+                target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
+            }
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, target, tex->id, desc.ds.level);
+        }
+
+        GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        if (status != GL_FRAMEBUFFER_COMPLETE) {
+            LOG("! FBO status: %d\n", (int)status);
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     virtual ~FrameBufferGL() {
@@ -339,7 +388,6 @@ struct FrameBufferGL : FrameBuffer {
         }
 
         glBindFramebuffer(GL_FRAMEBUFFER, id);
-        // TODO
     }
 };
 
@@ -505,6 +553,21 @@ struct ContextGL : Context {
         GetProcOGL( glDisableVertexAttribArray );
         GetProcOGL( glVertexAttribPointer );
         GetProcOGL( glGetProgramiv );
+    // Frame Buffers
+        GetProcOGL( glGenFramebuffers );
+        GetProcOGL( glBindFramebuffer );
+        GetProcOGL( glGenRenderbuffers );
+        GetProcOGL( glBindRenderbuffer );
+        GetProcOGL( glFramebufferTexture2D );
+        GetProcOGL( glFramebufferRenderbuffer );
+        GetProcOGL( glRenderbufferStorage );
+        GetProcOGL( glCheckFramebufferStatus );
+        GetProcOGL( glDeleteFramebuffers );
+        GetProcOGL( glDeleteRenderbuffers );
+    // Profile
+        GetProcOGL( glObjectLabel );
+        GetProcOGL( glPushDebugGroup );
+        GetProcOGL( glPopDebugGroup );
     // Common
         GetProcOGL( glStencilFuncSeparate );
         GetProcOGL( glStencilMaskSeparate );
@@ -544,6 +607,10 @@ struct ContextGL : Context {
 
     virtual Shader* createShader(const Shader::Desc &desc) override {
         return new ShaderGL(desc);
+    }
+
+    virtual RenderPass* createRenderPass(const RenderPass::Desc &desc) {
+        return new RenderPass(desc);
     }
 
     virtual Mesh* createMesh(const Mesh::Desc &desc) override {
@@ -605,13 +672,33 @@ struct ContextGL : Context {
         }
         stencilRef = ref;
 
-        setStencilRef(stencilRef);
+        ASSERT(curRenderState);
+
+        ((RenderStateGL*)curRenderState)->setStencilRef(stencilRef);
     }
 
     virtual void beginPass(const FrameBuffer *fb) override {
         Context::beginPass(fb);
         FrameBufferGL *obj = (FrameBufferGL*)fb;
         obj->bind();
+
+        if (!obj) {
+            setViewport(0, 0, width, height);
+            return;
+        }
+
+        setViewport(0, 0, obj->width, obj->height);
+
+        RenderPass::Desc &rp = obj->desc.pass->desc;
+        uint32 mask = 0;
+
+        if (rp.op & RenderPass::OP_COLOR_CLEAR)   mask |= CLEAR_MASK_COLOR;
+        if (rp.op & RenderPass::OP_DEPTH_CLEAR)   mask |= CLEAR_MASK_DEPTH;
+        if (rp.op & RenderPass::OP_STENCIL_CLEAR) mask |= CLEAR_MASK_STENCIL;
+
+        if (mask) {
+            clear(mask, rp.clearColor, rp.clearDepth, rp.clearStencil);
+        }
     }
 
     virtual void setTexture(const Texture *texture, ShaderSampler sampler) override {
@@ -641,6 +728,16 @@ struct ContextGL : Context {
 
         glBindVertexArray(obj->id);
         glDrawElements(GL_TRIANGLES, iCount, GL_UNSIGNED_SHORT, (Index*)NULL + iStart);
+
+        Context::draw(mesh, iStart, iCount);
+    }
+
+    virtual void pushMarker(const char *title) override {
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 1, -1, title);
+    }
+
+    virtual void popMarker() override {
+        glPopDebugGroup();
     }
 };
 

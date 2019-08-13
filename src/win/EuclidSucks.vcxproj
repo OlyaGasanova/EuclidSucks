@@ -173,23 +173,29 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\camera.h" />
+    <ClInclude Include="..\common\array.h" />
+    <ClInclude Include="..\common\dds.h" />
+    <ClInclude Include="..\common\stream.h" />
     <ClInclude Include="..\context.h" />
     <ClInclude Include="..\context\gl.h" />
     <ClInclude Include="..\entity.h" />
+    <ClInclude Include="..\entity\camera.h" />
+    <ClInclude Include="..\entity\light.h" />
+    <ClInclude Include="..\entity\model.h" />
+    <ClInclude Include="..\entity\portal.h" />
     <ClInclude Include="..\game.h" />
     <ClInclude Include="..\input.h" />
+    <ClInclude Include="..\manager.h" />
+    <ClInclude Include="..\math\segment.h" />
+    <ClInclude Include="..\math\triangle.h" />
     <ClInclude Include="..\renderable.h" />
-    <ClInclude Include="..\resource_manager.h" />
     <ClInclude Include="..\material.h" />
     <ClInclude Include="..\math\mat4.h" />
     <ClInclude Include="..\math\vec2.h" />
     <ClInclude Include="..\math\vec3.h" />
     <ClInclude Include="..\math\vec4.h" />
-    <ClInclude Include="..\dds.h" />
     <ClInclude Include="..\renderer.h" />
     <ClInclude Include="..\scene.h" />
-    <ClInclude Include="..\stream.h" />
     <ClInclude Include="..\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -71,8 +71,8 @@ HGLRC initGL(HWND hWnd) {
         WGL_ACCELERATION_ARB,   WGL_FULL_ACCELERATION_ARB,
         WGL_COLOR_BITS_ARB,     32,
         WGL_ALPHA_BITS_ARB,     8,
-        WGL_DEPTH_BITS_ARB,     24,
-        WGL_STENCIL_BITS_ARB,   8,
+        WGL_DEPTH_BITS_ARB,     0,
+        WGL_STENCIL_BITS_ARB,   0,
         0
     };
  
@@ -86,7 +86,7 @@ HGLRC initGL(HWND hWnd) {
     int contextAttribs[] = {
         WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
         WGL_CONTEXT_MINOR_VERSION_ARB, 2,
-        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+        WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
         0
     };
  

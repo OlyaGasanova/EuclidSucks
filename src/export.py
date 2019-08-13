@@ -13,8 +13,8 @@ MatGL = Matrix(([-1, 0, 0, 0],
                 [ 0, 0, 0, 1]))
 InvMatGL = MatGL.inverted()
 
-def writeTransform(file, obj):
-    m = MatGL * obj.matrix_local * InvMatGL
+def writeTransform(file, matrix):
+    m = MatGL * matrix * InvMatGL
     m.transpose()
     # write 16 floats
     for row in m:
@@ -39,10 +39,17 @@ def writeMaterial(file, material):
             texName = os.path.splitext(bpy.path.basename(slot.texture.image.filepath))[0]
         writeString(file, texName)
     # get shader input params
-    inputs = material.node_tree.nodes[1].inputs;
-    color     = list(inputs['Base Color'].default_value)
-    metallic  = inputs['Metallic'].default_value
-    roughness = inputs['Roughness'].default_value
+    BSDF = material.node_tree.nodes.get("Principled BSDF")
+    if BSDF != None:
+        inputs = BSDF.inputs;
+        color     = list(inputs['Base Color'].default_value)
+        metallic  = inputs['Metallic'].default_value
+        roughness = inputs['Roughness'].default_value
+    else:
+        color     = (1.0, 1.0, 1.0, 1.0)
+        metallic  = 0.0
+        roughness = 0.0
+    
     # write params
     file.write(struct.pack('ffff', color[0], color[1], color[2], color[3]))
     file.write(struct.pack('f', metallic))
@@ -112,12 +119,22 @@ def export(path):
     
     for obj in bpy.data.scenes[0].objects:
         type = -1
-        if obj.type == 'MESH' and len(obj.material_slots) > 0 and len(obj.material_slots[0].material.texture_slots) > 0:
-            type = 0
+        if obj.type == 'MESH':
+            if obj.name.startswith('#portal'):
+                if obj.get("warp") == None:
+                    raise TypeError('no "warp" param for portal ' + obj.name)
+                if bpy.data.objects.get('#portal.' + obj['warp']) == None:
+                    raise TypeError('no warp object "#portal.' + obj['warp'] + '" found for portal ' + obj.name)
+                type = 4
+            else:
+                if len(obj.material_slots) > 0 and len(obj.material_slots[0].material.texture_slots) > 0:
+                    type = 0
         if obj.type == 'LAMP':
             type = 1
-        if obj.name.startswith('#start'):
+        if obj.type == 'CAMERA':
             type = 2
+        if obj.name.startswith('#start'):
+            type = 3
         if type == -1:
             continue
         objects.append( ( type, obj ) )
@@ -136,10 +153,17 @@ def export(path):
         obj  = item[1]
         print(" ", obj.name)
         file.write(struct.pack('i', type))
-        writeTransform(file, obj)
-        if type == 0:
+        writeTransform(file, obj.matrix_local)
+        if type == 0 or type == 4: # MESH or portal
             writeMaterial(file, obj.material_slots[0].material)
             writeMesh(file, obj.data);
+            
+            if type == 4: # write destination portal index
+                index = objects.index( ( type, bpy.data.objects.get('#portal.' + obj['warp']) ) )
+                file.write(struct.pack('i', index))
+            
+        if type == 2: # CAMERA
+            file.write(struct.pack('fff', obj.data.angle, obj.data.clip_start, obj.data.clip_end))
 
     file.close()
     

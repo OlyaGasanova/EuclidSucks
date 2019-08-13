@@ -3,7 +3,11 @@
 
 #include "utils.h"
 
-#define DESC_CTOR Desc() { memset(this, 0, sizeof(*this)); }
+#define DESC_CTOR\
+    Desc() { memset(this, 0, sizeof(*this)); }\
+    inline bool operator == (const Desc &desc) { return memcmp(this, &desc, sizeof(Desc)) == 0; }
+
+const vec4 COLOR_BLACK = {0.0f, 0.0f, 0.0f, 0.0f};
 
 struct ContextResource {
     ContextResource() {}
@@ -50,6 +54,7 @@ struct Texture : ContextResource {
         FLAG_NEAREST  = (1 << 1),
         FLAG_GEN_MIPS = (1 << 2),
         FLAG_CUBEMAP  = (1 << 3),
+        FLAG_TARGET   = (1 << 4),
     };
 
     enum Format {
@@ -66,6 +71,7 @@ struct Texture : ContextResource {
         FMT_RGB32F,
         FMT_RGBA32F,
         FMT_R11G11B10F,
+        FMT_D24S8,
         FMT_BC1,
         FMT_BC1_SRGB,
         FMT_BC2,
@@ -90,10 +96,21 @@ struct Texture : ContextResource {
         Format  format;
         void    *data;
 
+        Desc(uint16  flags,
+             uint16  width,
+             uint16  height,
+             uint16  depth,
+             uint16  slices,
+             uint16  levels,
+             Format  format,
+             void    *data = NULL) : flags(flags), width(width), height(height), depth(depth), slices(slices), levels(levels), format(format), data(data) {}
+
         DESC_CTOR
     } desc;
 
     Texture(const Desc &desc) : desc(desc) {}
+
+    virtual void setLabel(const char *text) {}
 };
 
 
@@ -135,6 +152,8 @@ struct Shader : ContextResource {
     } desc;
 
     Shader(const Desc &desc) : desc(desc) {}
+
+    virtual void setLabel(const char *text) {}
 };
 
 
@@ -174,8 +193,20 @@ struct RenderPass : ContextResource {
         Texture::Format rt[MAX_RENDER_TARGETS];
         Texture::Format ds;
         uint16          op;
+        vec4            clearColor;
+        float           clearDepth;
+        uint8           clearStencil;
 
-        Desc(Texture::Format rt0, Texture::Format rt1, Texture::Format rt2, Texture::Format rt3, Texture::Format ds, uint16 op) : ds(ds), op(op) {
+        Desc(Texture::Format rt0, 
+             Texture::Format rt1,
+             Texture::Format rt2,
+             Texture::Format rt3,
+             Texture::Format ds,
+             uint16 op, 
+             const vec4 &clearColor = COLOR_BLACK,
+             float clearDepth = 1.0f,
+             uint8 clearStencil = 0x00) : ds(ds), op(op), clearColor(clearColor), clearDepth(clearDepth), clearStencil(clearStencil) {
+
             rt[0] = rt0;
             rt[1] = rt1;
             rt[2] = rt2;
@@ -189,17 +220,47 @@ struct RenderPass : ContextResource {
 };
 
 
+struct TargetView {
+    Texture* texture;
+    uint16   level;
+    uint16   face;
+
+    TargetView() {}
+    TargetView(Texture* texture, uint16 level = 0, uint16 face = 0) : texture(texture), level(level), face(face) {}
+
+    bool getSize(int &w, int &h) const {
+        if (!texture) {
+            return false;
+        }
+        w = texture->desc.width  << level;
+        h = texture->desc.height << level;
+        return true;
+    }
+};
+
 struct FrameBuffer : ContextResource {
+    int width;
+    int height;
 
     struct Desc {
-        RenderPass *pass;
-        Texture    *rt[MAX_RENDER_TARGETS];
-        Texture    *ds;
+        RenderPass* pass;
+        TargetView  rt[MAX_RENDER_TARGETS];
+        TargetView  ds;
 
         DESC_CTOR
     } desc;
 
-    FrameBuffer(const Desc &desc) : desc(desc) {}
+    FrameBuffer(const Desc &desc) : desc(desc) {
+        if (desc.ds.getSize(width, height)) {
+            return;
+        }
+
+        for (int i = 0; i < MAX_RENDER_TARGETS; i++) {
+            if (desc.rt[i].getSize(width, height)) {
+                return;
+            }
+        }
+    }
 };
 
 
@@ -262,8 +323,6 @@ enum ColorMask {
     COLOR_MASK_ALL  = COLOR_MASK_R | COLOR_MASK_G | COLOR_MASK_B | COLOR_MASK_A,
 };
 
-const vec4 COLOR_BLACK = {0.0f, 0.0f, 0.0f, 0.0f};
-
 struct RenderState : ContextResource {
 
     struct Desc {
@@ -306,6 +365,9 @@ struct Context {
     const RenderState *curRenderState;
     const FrameBuffer *curFrameBuffer;
 
+    int width;
+    int height;
+
     Context() : curRenderState(NULL), curFrameBuffer(NULL) {}
     virtual ~Context() {}
 
@@ -323,19 +385,28 @@ struct Context {
 
     virtual void resetRenderState() {}
 
-    virtual void resize(int nWidth, int nHeight) {}
+    virtual void resize(int width, int height) {
+        this->width  = width;
+        this->height = height;
+    }
+
+    virtual FrameBuffer* getSwapChainFB() {
+        return NULL;
+    }
+
     virtual void clear(int clearMask, const vec4 &color = COLOR_BLACK, float depth = 1.0f, int stencil = 0) {}
 
     virtual void setViewport(int x, int y, int width, int height) {}
 
     virtual void setRenderState(const RenderState *renderState) {
         curRenderState = renderState;
-        ASSERT(!curFrameBuffer || (renderState && curFrameBuffer && curRenderState->desc.pass == curFrameBuffer->desc.pass));
+        //ASSERT(!curFrameBuffer || (renderState && curFrameBuffer && curRenderState->desc.pass == curFrameBuffer->desc.pass));
     }
 
     virtual void setStencilRef(uint8 ref) {}
 
     virtual void beginPass(const FrameBuffer *fb) {
+        ASSERT(!curFrameBuffer);
         curFrameBuffer = fb;
     }
 
@@ -348,6 +419,9 @@ struct Context {
     virtual void setUniform(ShaderUniform uniform, const mat4 &value, int count = 1) {}
 
     virtual void draw(const Mesh *mesh, int iStart = -1, int iCount = -1) {}
+
+    virtual void pushMarker(const char *title) {}
+    virtual void popMarker() {}
 };
 
 #include "context/gl.h"
@@ -359,5 +433,20 @@ enum GAPI {
 };
 
 Context *ctx;
+
+
+struct Marker {
+
+    Marker(const char *title) {
+        ctx->pushMarker(title);
+    }
+
+    ~Marker() {
+        ctx->popMarker();
+    }
+
+};
+
+#define GPU_MARKER(title) Marker _marker##__LINE__(title)
 
 #endif
