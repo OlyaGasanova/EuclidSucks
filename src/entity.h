@@ -22,8 +22,6 @@ struct Entity {
         uint8 value;
     };
 
-    Entity     *next;
-
     Type       type;
     Flags      flags;
     mat4       matrix;

@@ -10,8 +10,8 @@
 
 #define RENDER_TECH(E) \
     E( TECH_COMMON      ) \
-    E( TECH_SFILL       ) \
-    E( TECH_STEST       )
+    E( TECH_PORTAL_FILL ) \
+    E( TECH_PORTAL_TEST )
 
 #define RENDER_TARGET(E) \
     E( RT_MAIN_HDR      ) \
