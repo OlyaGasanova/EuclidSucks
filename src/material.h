@@ -83,7 +83,7 @@ struct Material {
         switch (tech) {
             case TECH_COMMON :
                 break;
-            case TECH_SFILL  :
+            case TECH_PORTAL_FILL :
                 desc.colorMask   = COLOR_MASK_NONE;
                 desc.stencilTest = true;
                 desc.stencil[FACE_FRONT].sfail     = STENCIL_KEEP;
@@ -93,7 +93,7 @@ struct Material {
                 desc.stencil[FACE_FRONT].readMask  = 0xFF;
                 desc.stencil[FACE_FRONT].writeMask = 0xFF;
                 break;
-            case TECH_STEST  :
+            case TECH_PORTAL_TEST :
                 desc.stencilTest = true;
                 desc.stencil[FACE_FRONT].sfail     = STENCIL_KEEP;
                 desc.stencil[FACE_FRONT].zfail     = STENCIL_KEEP;

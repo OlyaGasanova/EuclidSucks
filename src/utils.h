@@ -49,8 +49,8 @@ inline const T& max(const T &a, const T &b) {
 }
 
 template <class T>
-inline const int sign(const T &x) {
-    return x > 0 ? 1 : (x < 0 ? -1 : 0);
+inline const T sign(const T &x) {
+    return (T)(x > 0 ? 1 : (x < 0 ? -1 : 0));
 }
 
 void sincos(float r, float *s, float *c) {

@@ -14,7 +14,6 @@ struct Camera : Entity {
 
     mat4  mProj;
     mat4  mView;
-    mat4  mViewProj;
 
     Camera(const vec3 &pos, const vec3 &rot) : Entity(NULL, Entity::TYPE_CAMERA), pos(pos), rot(rot), fov(90.0f), znear(0.1f), zfar(1024.0f) {
         matrix.identity();
@@ -46,8 +45,27 @@ struct Camera : Entity {
     void refresh() {
         mProj = mat4::perspective(fov, aspect, znear, zfar);
         mView = matrix.inverseOrtho();
+    }
 
-        mViewProj = mProj * mView;
+    void setOblique(const vec4 &clipPlane) { // http://www.terathon.com/code/oblique.html
+        vec4 p = mView.inverseOrtho().transpose() * clipPlane;
+
+        vec4 q;
+        q.x = (sign(p.x) + mProj.e02) / mProj.e00;
+        q.y = (sign(p.y) + mProj.e12) / mProj.e11;
+        q.z = -1.0f;
+        q.w = (1.0f + mProj.e22) / mProj.e23;
+
+        vec4 c = p * (2.0f / dot(p, q));
+
+        mProj.e20 = c.x;
+        mProj.e21 = c.y;
+        mProj.e22 = c.z + 1.0f;
+        mProj.e23 = c.w;
+    }
+
+    mat4 getViewProj() {
+        return mProj * mView;
     }
 
     void control() {

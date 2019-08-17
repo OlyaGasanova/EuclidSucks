@@ -139,6 +139,10 @@ struct Renderer {
         ctx->popMarker();
     }
 
+    void setTech(Tech tech) {
+        this->tech = tech;
+    }
+
     void setMaterial(Material *material) {
         RenderState *state = material->getRenderState(pass, tech);
 

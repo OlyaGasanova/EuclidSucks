@@ -66,7 +66,8 @@ struct Scene {
             Entity *entity = entities[i];
             if (entity->type == Entity::TYPE_PORTAL) {
                 Portal* portal = (Portal*)entity;
-                portal->warpEntity = (Portal*)entities[portal->warpIndex];
+                portal->warpPortal = (Portal*)entities[portal->warpIndex];
+                portal->updateTransform();
             }
         }
     }
@@ -140,16 +141,14 @@ struct Scene {
 
         {
             GPU_MARKER("Mask Portals");
-            renderer->tech = TECH_SFILL;
+            renderer->setTech(TECH_PORTAL_FILL);
+
             for (int i = 0; i < entities.length; i++) {
                 Entity *entity = entities[i];
 
                 if (!entity->flags.visible || entity->type != Entity::TYPE_PORTAL) {
                     continue;
                 }
-
-                Portal *portal = (Portal*)entity;
-                renderer->mViewProj = portal->getObliqueViewProj(camera->mProj, camera->mView);
 
                 ctx->setStencilRef(index++); // set portal index to fill
                 renderer->render(entity->renderable);
@@ -161,8 +160,10 @@ struct Scene {
 
         {
             GPU_MARKER("Portals");
+            renderer->setTech(TECH_PORTAL_TEST);
+            
             ctx->clear(CLEAR_MASK_DEPTH);
-            renderer->tech = TECH_STEST;
+
             for (int i = 0; i < entities.length; i++) {
                 Entity *entity = entities[i];
 
@@ -172,11 +173,14 @@ struct Scene {
 
                 Portal *portal = (Portal*)entity;
 
-                mat4 mView = camera->mView * portal->warpTransform;
+                mat4 mProj = camera->mProj;
+                mat4 mView = camera->mView;
 
-                renderer->viewPos = vec4(mView.inverseOrtho().getPos(), 1.0);
+                camera->mView = camera->mView * portal->warpTransform;
 
-                renderer->mViewProj = portal->getObliqueViewProj(camera->mProj, mView);
+                camera->setOblique(portal->warpPortal->clipPlane);
+                renderer->mViewProj = camera->getViewProj();
+                renderer->viewPos = vec4(camera->mView.inverseOrtho().getPos(), 1.0);
 
                 ctx->setStencilRef(index++); // set portal index for stencil test
 
@@ -184,8 +188,8 @@ struct Scene {
                 renderEntities(recursionDepth - 1, nextPortalIndex);
                 entity->flags.hidden = false;
 
-                renderer->mViewProj = camera->mViewProj;
-                renderer->viewPos   = vec4(camera->matrix.getPos(), 1.0);
+                camera->mProj = mProj;
+                camera->mView = mView;
             }
         }
     }
@@ -201,7 +205,7 @@ struct Scene {
         camera->aspect = (float)renderer->width / (float)renderer->height;
         camera->refresh();
 
-        renderer->mViewProj = camera->mViewProj;
+        renderer->mViewProj = camera->getViewProj();
 
     // test
         renderer->lightColor[0] = vec4(1.0f, 0.2f, 0.2f, 0.0f);
@@ -218,7 +222,7 @@ struct Scene {
         ctx->setTexture(texLUT,    sLUT);
     // ----
 
-        renderer->tech = TECH_COMMON;
+        renderer->setTech(TECH_COMMON);
         renderEntities(MAX_RECURSION_DEPTH, 1);
 
         renderer->endPass();
